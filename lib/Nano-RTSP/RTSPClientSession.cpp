@@ -474,8 +474,9 @@ void RTSPClientSession::processRequest()
         udpErrorCount = 0;
         lastUdpErrorTime = 0;
 
-        // Reset frame counter for new session
+        // Reset frame counter and sequence number for new session
         timecodeManager.resetFrameCounter();
+        sequenceNumber = 0; // Reset RTP sequence number for new session
 
         LOG_INFOF("RTSP playback started - FPS: %d", currentFramerate);
     }
@@ -605,6 +606,13 @@ void RTSPClientSession::sendRTPFrame()
         rtpHeader[17] = RTSP_MJPEG_COMPATIBILITY_QUALITY; // Configured quality factor
         rtpHeader[18] = fb->width / 8;                    // Width in 8-pixel units
         rtpHeader[19] = fb->height / 8;                   // Height in 8-pixel units
+
+        // Add keyframe information for HLS compatibility (UDP)
+        if (isFirstFragment)
+        {
+            // Signal that this is a keyframe (every MJPEG frame is a keyframe)
+            rtpHeader[12] |= 0x80; // Set keyframe bit in type specific field
+        }
 
         // Send RTP packet with improved robust error handling
         bool packetSent = false;
@@ -741,6 +749,9 @@ void RTSPClientSession::sendRTPFrame()
 
 void RTSPClientSession::sendRTPFrameTCP()
 {
+    // Update timecodes for this frame (CRITICAL for TCP mode)
+    updateTimecodeForFrame();
+
     // In TCP mode, use forced capture without timing restrictions
     camera_fb_t *fb = CameraManager::captureForced();
     if (!fb)
@@ -811,6 +822,13 @@ void RTSPClientSession::sendRTPFrameTCP()
         rtpHeader[17] = RTSP_MJPEG_COMPATIBILITY_QUALITY; // Configured quality factor
         rtpHeader[18] = fb->width / 8;                    // Width in 8-pixel units
         rtpHeader[19] = fb->height / 8;                   // Height in 8-pixel units
+
+        // Add keyframe information for HLS compatibility (TCP)
+        if (isFirstFragment)
+        {
+            // Signal that this is a keyframe (every MJPEG frame is a keyframe)
+            rtpHeader[12] |= 0x80; // Set keyframe bit in type specific field
+        }
 
         // Send RTP packet via TCP interleaved
         // Format: '$' + channel + length + RTP data
@@ -971,6 +989,15 @@ void RTSPClientSession::addMJPEGMetadataToSDP(String &sdp, uint16_t width, uint1
         sdp += "a=keyframe-interval:" + String(RTSP_KEYFRAME_INTERVAL) + "\r\n";
     }
 
+    // HLS compatibility metadata
+    if (RTSP_ENABLE_HLS_COMPATIBILITY)
+    {
+        sdp += "a=segment-duration:" + String(RTSP_HLS_SEGMENT_DURATION) + "\r\n"; // Configurable segment duration
+        sdp += "a=segment-type:keyframe\r\n";                                      // Keyframe-based segmentation
+        sdp += "a=gop-size:" + String(RTSP_HLS_GOP_SIZE) + "\r\n";                 // Configurable GOP size
+        sdp += "a=closed-gop:" + String(RTSP_HLS_CLOSED_GOP) + "\r\n";             // Configurable closed GOP
+    }
+
     // Video compatibility metadata
     if (RTSP_ENABLE_VIDEO_COMPATIBILITY_METADATA)
     {
@@ -995,6 +1022,41 @@ void RTSPClientSession::addMJPEGMetadataToSDP(String &sdp, uint16_t width, uint1
     // Timing information for compatibility
     sdp += "a=frame-duration:" + String(1000 / RTSP_FPS) + "ms\r\n";
     sdp += "a=clock-rate:" + String(RTSP_CLOCK_RATE) + "\r\n";
+
+    // HLS-specific metadata for better compatibility
+    addHLSMetadataToSDP(sdp);
+}
+
+void RTSPClientSession::addHLSMetadataToSDP(String &sdp)
+{
+    // Only add HLS metadata if enabled
+    if (!RTSP_ENABLE_HLS_COMPATIBILITY)
+    {
+        return;
+    }
+
+    // HLS-specific metadata for better compatibility with FFmpeg
+    sdp += "a=hls-version:3\r\n";                                                  // HLS version 3
+    sdp += "a=hls-segment-duration:" + String(RTSP_HLS_SEGMENT_DURATION) + "\r\n"; // Configurable segment duration
+    sdp += "a=hls-playlist-type:VOD\r\n";                                          // Video on Demand
+    sdp += "a=hls-target-duration:" + String(RTSP_HLS_SEGMENT_DURATION) + "\r\n";  // Target segment duration
+    sdp += "a=hls-allow-cache:1\r\n";                                              // Allow caching
+
+    // Keyframe information for HLS
+    sdp += "a=hls-keyframe-interval:" + String(RTSP_KEYFRAME_INTERVAL) + "\r\n"; // Configurable keyframe interval
+    sdp += "a=hls-gop-size:" + String(RTSP_HLS_GOP_SIZE) + "\r\n";               // Configurable GOP size
+    sdp += "a=hls-closed-gop:" + String(RTSP_HLS_CLOSED_GOP) + "\r\n";           // Configurable closed GOP
+
+    // Stream information
+    sdp += "a=hls-stream-type:video\r\n";
+    sdp += "a=hls-codec:mjpeg\r\n";
+    sdp += "a=hls-framerate:" + String(RTSP_FPS) + "\r\n"; // Use configured framerate
+    sdp += "a=hls-resolution:800x600\r\n";
+
+    // FFmpeg compatibility
+    sdp += "a=ffmpeg-compatible:1\r\n";
+    sdp += "a=ffmpeg-keyframe-mode:all\r\n"; // All frames are keyframes
+    sdp += "a=ffmpeg-gop-mode:closed\r\n";   // Closed GOP mode
 }
 
 void RTSPClientSession::updateTimecodeForFrame()

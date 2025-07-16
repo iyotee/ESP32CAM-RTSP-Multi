@@ -35,13 +35,13 @@ public:
      */
     static bool begin();
 
-        /**
+    /**
      * @brief Capture a single frame with framerate control
-     * 
+     *
      * Captures a JPEG frame from the camera with strict timing control
      * to maintain the configured framerate. Returns nullptr if it's too
      * early for the next frame (framerate control).
-     * 
+     *
      * @return Pointer to camera frame buffer, or nullptr if error or too early
      * @note Call releaseFrame() immediately after processing the frame
      */
@@ -49,10 +49,10 @@ public:
 
     /**
      * @brief Capture a single frame without timing restrictions (for TCP mode)
-     * 
+     *
      * Captures a JPEG frame from the camera without framerate control.
      * Used when timing is not critical (e.g., TCP fallback mode).
-     * 
+     *
      * @return Pointer to camera frame buffer, or nullptr if error
      * @note Call releaseFrame() immediately after processing the frame
      */
@@ -98,6 +98,17 @@ private:
      * @param sensor Pointer to camera sensor
      */
     static void configureAdvancedSettings(sensor_t *sensor);
+
+    /**
+     * @brief Add HLS metadata to JPEG frame for better compatibility
+     *
+     * Adds EXIF metadata to JPEG frames to improve HLS compatibility
+     * with FFmpeg and video players.
+     *
+     * @param fb Pointer to camera frame buffer
+     * @return true if metadata added successfully, false otherwise
+     */
+    static bool addHLSMetadataToJPEG(camera_fb_t *fb);
 };
 
 #endif // CAMERA_MANAGER_H

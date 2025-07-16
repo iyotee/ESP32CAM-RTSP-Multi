@@ -75,6 +75,7 @@ private:
     void generateAdvancedSDP(String &sdp);
     void addClockMetadataToSDP(String &sdp);
     void addMJPEGMetadataToSDP(String &sdp, uint16_t width, uint16_t height);
+    void addHLSMetadataToSDP(String &sdp);
     void updateTimecodeForFrame();
 };
 

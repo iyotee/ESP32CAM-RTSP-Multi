@@ -19,8 +19,8 @@ typedef std::function<camera_fb_t *()> CaptureCallback;
 // ===== WIFI CONFIGURATION =====
 // ⚠️  MODIFY THESE VALUES BEFORE USE !
 // Replace with your own WiFi credentials
-#define WIFI_SSID "YOUR_WIFI_SSID"
-#define WIFI_PASSWORD "YOUR_WIFI_PASSWORD"
+#define WIFI_SSID "YOUR_WIFI_SSID_HERE"
+#define WIFI_PASSWORD "YOUR_WIFI_PASSWORD_HERE"
 
 // ===== CAMERA CONFIGURATION =====
 // Camera resolution - Choose according to your needs:
@@ -179,6 +179,22 @@ typedef std::function<camera_fb_t *()> CaptureCallback;
 // 0 = Disabled
 // 1 = Enabled (adds a=keyframe-interval in SDP)
 #define RTSP_SIGNAL_KEYFRAMES_IN_SDP 1
+
+// HLS compatibility configuration
+// 0 = Disabled
+// 1 = Enabled (adds HLS-specific metadata)
+#define RTSP_ENABLE_HLS_COMPATIBILITY 1
+
+// HLS segment duration (seconds)
+#define RTSP_HLS_SEGMENT_DURATION 2
+
+// HLS GOP size (for MJPEG, each frame is independent)
+#define RTSP_HLS_GOP_SIZE 1
+
+// HLS closed GOP mode
+// 0 = Disabled
+// 1 = Enabled (better HLS compatibility)
+#define RTSP_HLS_CLOSED_GOP 1
 
 // Advanced optimization: number of frame buffers and capture mode
 #define CAMERA_FB_COUNT 1                   // 1 buffer - TIMING OPTIMIZED
