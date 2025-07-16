@@ -32,7 +32,7 @@ typedef std::function<camera_fb_t *()> CaptureCallback;
 // FRAMESIZE_HD     = 1280x720  (HD, very slow)
 // FRAMESIZE_SXGA   = 1280x1024 (very high resolution, very slow)
 // FRAMESIZE_UXGA   = 1600x1200 (ultra high resolution, extremely slow)
-#define CAMERA_FRAME_SIZE FRAMESIZE_VGA // 640x480 - SAFE MODE
+#define CAMERA_FRAME_SIZE FRAMESIZE_VGA // 640x480
 
 // JPEG Quality (0-100)
 // 0-10   = Maximum quality, very large files
@@ -174,17 +174,17 @@ typedef std::function<camera_fb_t *()> CaptureCallback;
 
 // Logger configuration
 // Available levels: LOG_ERROR, LOG_WARN, LOG_INFO, LOG_DEBUG, LOG_VERBOSE
-#define LOG_LEVEL LOG_DEBUG // Affichage maximal des logs
+#define LOG_LEVEL LOG_INFO // Niveau INFO pour éviter le spam des logs
 
 // ===== OPTIMIZED WIFI CONFIGURATION =====
 // Delay between WiFi connection attempts (ms)
-#define WIFI_DELAY_MS 250 // Reduced to 250ms for more responsiveness
+#define WIFI_DELAY_MS 200 // Balanced for stability and speed
 
 // Maximum number of WiFi connection attempts
-#define WIFI_MAX_ATTEMPTS 30 // Increased to 30 attempts
+#define WIFI_MAX_ATTEMPTS 15 // Balanced for reliability
 
 // Stabilization delay after WiFi connection (ms)
-#define WIFI_STABILIZATION_DELAY 1000 // Increased to 1 second
+#define WIFI_STABILIZATION_DELAY 500 // Balanced for stability
 
 // WiFi authentication error handling
 // 0 = Disabled
@@ -197,10 +197,10 @@ typedef std::function<camera_fb_t *()> CaptureCallback;
 #define WIFI_CLEAN_SESSION 1      // Clean session at each connection
 
 // WiFi cleanup delay (ms)
-#define WIFI_CLEANUP_DELAY 200
+#define WIFI_CLEANUP_DELAY 100 // Balanced for stability
 
 // WiFi reconnection delay in milliseconds
-#define WIFI_RECONNECT_DELAY 2000 // Increased to 2 seconds
+#define WIFI_RECONNECT_DELAY 1000 // Balanced for reliability
 
 // ===== OPTIMIZED UDP CONFIGURATION =====
 // Maximum number of UDP send attempts before TCP fallback

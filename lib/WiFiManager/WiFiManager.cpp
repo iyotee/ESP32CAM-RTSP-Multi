@@ -34,7 +34,7 @@ void WiFiManager::begin(const char *ssid, const char *password)
     WiFi.disconnect(true, true);
     delay(WIFI_CLEANUP_DELAY);
 
-    // Connection attempt with retry and improved error handling
+    // Optimized connection attempt with faster error handling
     int attempts = 0;
     const int maxAttempts = WIFI_MAX_ATTEMPTS;
     bool connectionSuccess = false;
@@ -52,28 +52,20 @@ void WiFiManager::begin(const char *ssid, const char *password)
 
         WiFi.begin(ssid, password);
 
-        // Wait for connection with optimized timeout
+        // Balanced connection wait with stable timeout
         int waitAttempts = 0;
-        const int waitMaxAttempts = 24; // 6 seconds max per attempt (250ms * 24)
+        const int waitMaxAttempts = 20; // 4 seconds max per attempt (200ms * 20)
 
         while (WiFi.status() != WL_CONNECTED && waitAttempts < waitMaxAttempts)
         {
             delay(WIFI_DELAY_MS);
             waitAttempts++;
 
-            // Check specific errors with improved handling
+            // Stable error detection
             if (WiFi.status() == WL_CONNECT_FAILED || WiFi.status() == WL_NO_SSID_AVAIL)
             {
-                LOG_WARNF("WiFi connection error (attempt %d): %d", attempts + 1, WiFi.status());
+                LOG_VERBOSEF("WiFi error detected (attempt %d): %d", attempts + 1, WiFi.status());
                 break; // Exit wait loop
-            }
-
-            // Specific authentication error handling
-            if (WIFI_HANDLE_AUTH_ERRORS && WiFi.status() == WL_CONNECT_FAILED)
-            {
-                LOG_WARN("Authentication error detected - attempting resolution...");
-                handleAuthError();
-                break; // Exit and restart
             }
         }
 
@@ -87,11 +79,8 @@ void WiFiManager::begin(const char *ssid, const char *password)
             attempts++;
             LOG_WARNF("Connection attempt %d/%d failed (status: %d)", attempts, maxAttempts, WiFi.status());
 
-            // Progressive delay between attempts with exponential backoff
-            int delayTime = 500 + (attempts * 200);
-            if (delayTime > 3000)
-                delayTime = 3000; // Max 3 seconds
-            delay(delayTime);
+            // Balanced delay between attempts
+            delay(300 + (attempts * 150)); // Max 1.65 seconds
         }
     }
 
@@ -243,21 +232,21 @@ bool WiFiManager::reconnect()
     {
         WiFi.begin();
 
-        // Wait for reconnection with timeout
+        // Faster reconnection wait
         int waitAttempts = 0;
-        const int waitMaxAttempts = 15; // 7.5 seconds max per attempt
+        const int waitMaxAttempts = 10; // 1 second max per attempt
 
         while (WiFi.status() != WL_CONNECTED && waitAttempts < waitMaxAttempts)
         {
             delay(WIFI_DELAY_MS);
             waitAttempts++;
 
-            // Check specific errors
-            if (WiFi.status() == WL_CONNECT_FAILED || WiFi.status() == WL_NO_SSID_AVAIL)
-            {
-                LOG_WARNF("WiFi reconnection error (attempt %d): %d", attempts + 1, WiFi.status());
-                break;
-            }
+                    // Quick error detection
+        if (WiFi.status() == WL_CONNECT_FAILED || WiFi.status() == WL_NO_SSID_AVAIL)
+        {
+            LOG_VERBOSEF("WiFi reconnection error (attempt %d): %d", attempts + 1, WiFi.status());
+            break;
+        }
         }
 
         if (WiFi.status() == WL_CONNECTED)
@@ -270,12 +259,12 @@ bool WiFiManager::reconnect()
             attempts++;
             LOG_WARNF("Reconnection attempt %d/%d failed", attempts, maxAttempts);
 
-            // Progressive delay between attempts
-            delay(1000 + (attempts * 200));
+            // Shorter delay between attempts
+            delay(300 + (attempts * 100));
 
             // Clean and restart
             WiFi.disconnect(true, true);
-            delay(300);
+            delay(100);
         }
     }
 
