@@ -27,6 +27,9 @@
 - **No hardcoded values** : everything is modifiable via macros
 - **Universal callback type `CaptureCallback`** for image capture
 - **PlatformIO and Arduino IDE compatible**
+- **Advanced UDP/TCP fallback** for maximum compatibility
+- **Safe camera configuration** with optimized memory management
+- **Real-time debugging** with comprehensive logging system
 
 ---
 
@@ -187,6 +190,7 @@ ESP32CAM-RTSP-Multi/
 - PlatformIO (recommended) or Arduino IDE
 - ESP32-CAM module (AI-Thinker, etc.)
 - USB/CH340 drivers installed
+- Stable 5V/2A power supply (recommended for optimal performance)
 
 ### WiFi Configuration
 **⚠️ IMPORTANT : You MUST modify the WiFi credentials in `src/config.h` :**
@@ -194,6 +198,13 @@ ESP32CAM-RTSP-Multi/
 #define WIFI_SSID "YOUR_WIFI_SSID"
 #define WIFI_PASSWORD "YOUR_WIFI_PASSWORD"
 ```
+
+### Camera Configuration
+The firmware includes optimized camera settings for maximum stability:
+- **Safe resolution** : VGA (640x480) for optimal performance
+- **Dual buffer system** : 2 frame buffers for smooth operation
+- **Controlled framerate** : 10 FPS for network stability
+- **Memory management** : Automatic frame buffer release to prevent memory leaks
 
 ### Compilation and Deployment
 
@@ -227,6 +238,12 @@ ESP32CAM-RTSP-Multi/
 - **RTSP** : `rtsp://<ESP32_IP>:8554/stream=0`
 - **HTTP MJPEG** : `http://<ESP32_IP>:80/mjpeg`
 
+#### Transport Protocol
+The firmware automatically handles transport protocol selection:
+- **UDP mode** : Fast transmission with automatic TCP fallback
+- **TCP mode** : Reliable transmission for problematic networks
+- **Automatic fallback** : Seamless switching from UDP to TCP if needed
+
 #### Compatible clients
 - **VLC Media Player** : Open Media → Open Network Stream
 - **ffmpeg** : `ffplay rtsp://<ESP32_IP>:8554/stream=0`
@@ -247,7 +264,41 @@ ffplay rtsp://192.168.1.100:8554/stream=0
 ffmpeg -i rtsp://192.168.1.100:8554/stream=0 -c copy output.mkv
 ```
 
+**Force TCP transport (if UDP issues) :**
+```bash
+ffmpeg -rtsp_transport tcp -i rtsp://192.168.1.100:8554/stream=0 -c copy output.mkv
+```
+
 **Conversion with preserved timecodes :**
+
+## 🔧 Troubleshooting and Stability
+
+### Debug Mode
+The firmware includes comprehensive debugging capabilities:
+- **Log levels** : ERROR, WARN, INFO, DEBUG, VERBOSE
+- **Real-time monitoring** : System health checks every 10 seconds
+- **Memory tracking** : Automatic memory usage monitoring
+- **WiFi diagnostics** : Connection quality and stability monitoring
+
+### Common Issues and Solutions
+
+#### Camera Initialization Problems
+- **Symptom** : Firmware stops after WiFi connection
+- **Solution** : Ensure stable 5V/2A power supply, check camera ribbon cable
+
+#### Network Connectivity Issues
+- **Symptom** : Stream works but drops frequently
+- **Solution** : The firmware automatically falls back from UDP to TCP
+
+#### Memory Issues
+- **Symptom** : Firmware crashes after a few frames
+- **Solution** : Automatic frame buffer management prevents memory leaks
+
+### Performance Optimization
+- **Resolution** : VGA (640x480) provides optimal balance of quality and performance
+- **Framerate** : 10 FPS ensures network stability
+- **Buffers** : 2 frame buffers prevent memory overflow
+- **Transport** : Automatic UDP/TCP fallback for maximum compatibility
 ```bash
 ffmpeg -i rtsp://192.168.1.100:8554/stream=0 -c:v libx264 -preset ultrafast output.mp4
 ```
