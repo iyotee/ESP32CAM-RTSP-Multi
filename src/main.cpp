@@ -87,10 +87,10 @@ void setup()
     // === CAMERA INITIALIZATION ===
     LOG_INFO("Initializing ESP32-CAM camera...");
     LOG_INFO("Starting camera initialization process...");
-    
+
     bool cameraInitResult = CameraManager::begin();
     LOG_INFOF("Camera initialization result: %s", cameraInitResult ? "SUCCESS" : "FAILED");
-    
+
     if (!cameraInitResult)
     {
         LOG_ERROR("Camera initialization failed - Restarting...");
@@ -216,9 +216,15 @@ void loop()
         lastWiFiCheck = millis();
     }
 
-    // Adaptive delay for main loop
+    // Adaptive delay for main loop - optimized for precise timing
     delay(MAIN_LOOP_DELAY);
 
-    // Allow other tasks to execute
+    // Allow other tasks to execute and maintain timing precision
     yield();
+
+    // Additional micro-delay for better timing precision
+    if (rtspServer && rtspServer->hasActiveClients())
+    {
+        delayMicroseconds(500); // 0.5ms micro-delay for active RTSP clients
+    }
 }

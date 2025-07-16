@@ -74,3 +74,15 @@ void NanoRTSPServer::removeDisconnectedClients()
         }
     }
 }
+
+bool NanoRTSPServer::hasActiveClients() const
+{
+    for (const auto &client : clients)
+    {
+        if (client && client->isConnected())
+        {
+            return true;
+        }
+    }
+    return false;
+}

@@ -194,8 +194,8 @@ RTSPTimecode_t TimecodeManager::generateTimecode()
 
     last_frame_timestamp = timecode.pts;
 
-    LOG_DEBUGF("Final timecode - Frame: %lu, PTS: %lu, DTS: %lu, Increment: %lu",
-               frame_counter, timecode.pts, timecode.dts, RTSP_CLOCK_RATE / RTSP_FPS);
+    LOG_DEBUGF("Timecode updated - PTS: %lu, DTS: %lu, Frame: %lu",
+               timecode.pts, timecode.dts, frame_counter);
 
     return timecode;
 }
@@ -277,14 +277,6 @@ uint32_t TimecodeManager::calculatePTS(uint32_t frame_number)
     if (pts == 0 && frame_number > 0)
     {
         pts = frame_duration_rtp;
-    }
-
-    // Consistency check - verify correct increment
-    if (frame_duration_rtp != 6000) // Should be exactly 6000 for 15 FPS
-    {
-        Logger::warnf("Incorrect RTP timestamp increment - expected 6000, got %lu", frame_duration_rtp);
-        // Force correct increment
-        pts = frame_number * 6000;
     }
 
     LOG_DEBUGF("PTS calculated - Frame: %lu, PTS: %lu, Increment: %lu (%.2f ms)",

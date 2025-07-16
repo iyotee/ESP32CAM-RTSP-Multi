@@ -162,10 +162,10 @@ camera_fb_t *CameraManager::captureForced()
         return nullptr;
     }
 
-    // FORCED CAPTURE - No timing restrictions
+    // FORCED CAPTURE - No timing restrictions, optimized for RTSP
     unsigned long currentTime = millis();
 
-    // Capture with error handling
+    // Capture with error handling - optimized for speed
     camera_fb_t *fb = esp_camera_fb_get();
     if (!fb)
     {
@@ -173,7 +173,7 @@ camera_fb_t *CameraManager::captureForced()
         return nullptr;
     }
 
-    // Validate captured frame
+    // Quick validation - only check essential parameters
     if (fb->len == 0 || fb->width == 0 || fb->height == 0)
     {
         LOG_ERROR("Invalid frame captured in forced mode - empty or corrupted");
@@ -181,29 +181,13 @@ camera_fb_t *CameraManager::captureForced()
         return nullptr;
     }
 
-    // Validate JPEG markers (SOI and EOI) for forced capture
-    if (fb->len >= 2)
+    // Minimal JPEG validation for speed
+    if (fb->len >= 4 && (fb->buf[0] != 0xFF || fb->buf[1] != 0xD8 ||
+                         fb->buf[fb->len - 2] != 0xFF || fb->buf[fb->len - 1] != 0xD9))
     {
-        // Check SOI marker (Start of Image): 0xFF 0xD8
-        if (fb->buf[0] != 0xFF || fb->buf[1] != 0xD8)
-        {
-            Logger::errorf("Invalid JPEG SOI marker in forced mode - expected 0xFF 0xD8, got 0x%02X 0x%02X",
-                           fb->buf[0], fb->buf[1]);
-            esp_camera_fb_return(fb);
-            return nullptr;
-        }
-
-        // Check EOI marker (End of Image): 0xFF 0xD9
-        if (fb->len >= 4)
-        {
-            if (fb->buf[fb->len - 2] != 0xFF || fb->buf[fb->len - 1] != 0xD9)
-            {
-                Logger::errorf("Invalid JPEG EOI marker in forced mode - expected 0xFF 0xD9, got 0x%02X 0x%02X",
-                               fb->buf[fb->len - 2], fb->buf[fb->len - 1]);
-                esp_camera_fb_return(fb);
-                return nullptr;
-            }
-        }
+        LOG_ERROR("Invalid JPEG markers in forced mode");
+        esp_camera_fb_return(fb);
+        return nullptr;
     }
 
     LOG_DEBUGF("Forced frame captured: %d bytes, %dx%d, timestamp: %lu, JPEG valid",

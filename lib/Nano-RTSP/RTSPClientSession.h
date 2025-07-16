@@ -58,6 +58,10 @@ private:
     // Advanced timecode manager
     TimecodeManager timecodeManager;
     RTSPTimecode_t currentTimecode;
+    
+    // Timing compensation variables
+    int32_t timingDrift = 0;           // Accumulated timing drift
+    unsigned long lastCompensationTime = 0; // Last compensation adjustment
 
     void processRequest();
     void sendRTPFrame();

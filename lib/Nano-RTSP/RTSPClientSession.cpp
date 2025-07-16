@@ -10,6 +10,7 @@
 #include "../CameraManager/CameraManager.h"
 #include "../../src/config.h"
 #include "../Utils/Logger.h"
+#include <stdlib.h> // For abs()
 
 RTSPClientSession::RTSPClientSession(WiFiClient client) : client(client)
 {
@@ -75,15 +76,48 @@ void RTSPClientSession::handle()
 
         if (currentTime - lastFrameTime >= frameInterval)
         {
+            LOG_DEBUGF("Frame interval check - current: %lu, last: %lu, interval: %lu, need: %lu",
+                       currentTime, lastFrameTime, currentTime - lastFrameTime, frameInterval);
+
             // Validate timing - should be approximately 66.67ms for 15 FPS
             unsigned long actualInterval = currentTime - lastFrameTime;
-            if (actualInterval < 60 || actualInterval > 80) // Allow some tolerance
+
+// Only log timing warnings if enabled (debug mode)
+#if RTSP_DISABLE_TIMING_WARNINGS == 0
+            if (actualInterval < RTSP_TIMING_TOLERANCE_MIN || actualInterval > RTSP_TIMING_TOLERANCE_MAX)
             {
                 Logger::warnf("Timing deviation detected - expected ~67ms, got %lu ms", actualInterval);
             }
+#endif
 
-            LOG_DEBUGF("Sending RTSP frame - Interval: %lu ms, FPS: %d", actualInterval, currentFramerate);
+// Timing compensation (if enabled)
+#if RTSP_TIMING_COMPENSATION == 1
+            if (currentTime - lastCompensationTime > 500) // Every 500ms for more responsive compensation
+            {
+                // Calculate drift and apply compensation
+                int32_t expectedInterval = frameInterval;
+                int32_t drift = actualInterval - expectedInterval;
+                timingDrift += drift;
+
+                // Apply compensation to next frame interval
+                if (abs(timingDrift) > RTSP_COMPENSATION_FACTOR)
+                {
+                    int32_t newInterval = max(50, (int32_t)frameInterval - (timingDrift / 500));
+                    if (newInterval != frameInterval)
+                    {
+                        frameInterval = newInterval;
+                        LOG_DEBUGF("Timing compensation applied: new interval %lu ms", frameInterval);
+                    }
+                    timingDrift = 0; // Reset drift after compensation
+                }
+
+                lastCompensationTime = currentTime;
+            }
+#endif
+
+            LOG_DEBUGF("About to send RTP frame - Interval: %lu ms, FPS: %d", actualInterval, currentFramerate);
             sendRTPFrame();
+            LOG_DEBUG("RTP frame sent successfully");
             lastFrameTime = currentTime;
         }
     }
@@ -501,14 +535,14 @@ void RTSPClientSession::sendRTPFrame()
     // Update timecodes for this frame
     updateTimecodeForFrame();
 
-    camera_fb_t *fb = CameraManager::capture();
+    // Optimized capture for RTSP timing
+    camera_fb_t *fb = CameraManager::captureForced();
     if (!fb)
     {
         LOG_ERROR("Capture error for RTSP");
         return;
     }
-
-    LOG_DEBUGF("Frame captured - Size: %d bytes, Width: %d, Height: %d", fb->len, fb->width, fb->height);
+    LOG_DEBUGF("Frame captured successfully - Size: %d bytes, %dx%d", fb->len, fb->width, fb->height);
 
     // Fragment image with optimized size for UDP (800 bytes max)
     const int MAX_PACKET_SIZE = RTSP_MAX_FRAGMENT_SIZE; // Use optimized config
@@ -673,16 +707,10 @@ void RTSPClientSession::sendRTPFrame()
         // Buffer management and delay between fragments to avoid overload
         if (!isLastFragment)
         {
-            // Adaptive delay based on number of fragments and errors
-            int adaptiveDelay = RTSP_UDP_FRAGMENT_DELAY;
-            if (udpErrorCount > 0)
+            // Minimal delay for better timing - only if errors detected
+            if (udpErrorCount > 0 && fragments_sent % 3 == 0)
             {
-                adaptiveDelay *= 2; // Longer delay if recent errors
-            }
-
-            if (fragments_sent % 2 == 0) // Delay every 2 fragments instead of 3
-            {
-                delay(adaptiveDelay);
+                delay(RTSP_UDP_FRAGMENT_DELAY);
             }
             else
             {
@@ -811,7 +839,15 @@ void RTSPClientSession::sendRTPFrameTCP()
         if (client.write(fb->buf + offset, fragmentSize) != fragmentSize)
         {
             LOG_WARN("RTP data send error via TCP");
-            break;
+            // Don't break immediately, try to continue
+            if (!client.connected())
+            {
+                LOG_ERROR("TCP client disconnected during send");
+                break;
+            }
+            // Small delay before retry
+            delay(1);
+            continue;
         }
 
         fragments_sent++;

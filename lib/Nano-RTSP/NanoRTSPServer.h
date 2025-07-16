@@ -26,6 +26,7 @@ public:
     NanoRTSPServer(int port = RTSP_PORT);
     void begin();
     void handleClients();
+    bool hasActiveClients() const;
 
 private:
     WiFiServer server;

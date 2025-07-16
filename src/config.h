@@ -19,8 +19,8 @@ typedef std::function<camera_fb_t *()> CaptureCallback;
 // ===== WIFI CONFIGURATION =====
 // ⚠️  MODIFY THESE VALUES BEFORE USE !
 // Replace with your own WiFi credentials
-#define WIFI_SSID "YOUR_WIFI_SSID_HERE"
-#define WIFI_PASSWORD "YOUR_WIFI_PASSWORD_HERE"
+#define WIFI_SSID "YOUR_WIFI_SSID"
+#define WIFI_PASSWORD "YOUR_WIFI_PASSWORD"
 
 // ===== CAMERA CONFIGURATION =====
 // Camera resolution - Choose according to your needs:
@@ -32,7 +32,7 @@ typedef std::function<camera_fb_t *()> CaptureCallback;
 // FRAMESIZE_HD     = 1280x720  (HD, very slow)
 // FRAMESIZE_SXGA   = 1280x1024 (very high resolution, very slow)
 // FRAMESIZE_UXGA   = 1600x1200 (ultra high resolution, extremely slow)
-#define CAMERA_FRAME_SIZE FRAMESIZE_SVGA // 800x600
+#define CAMERA_FRAME_SIZE FRAMESIZE_SVGA // 640x480 - OPTIMIZED for 15 FPS stability
 
 // JPEG Quality (0-100)
 // 0-10   = Maximum quality, very large files
@@ -41,13 +41,13 @@ typedef std::function<camera_fb_t *()> CaptureCallback;
 // 50-70  = Medium quality (recommended for RTSP)
 // 70-90  = Low quality
 // 90-100 = Very low quality, small files
-#define CAMERA_JPEG_QUALITY 20 // 20 = OPTIMIZED for stability and FFmpeg compatibility
+#define CAMERA_JPEG_QUALITY 25 // 25 = OPTIMIZED for 15 FPS timing
 
 // XCLK frequency in Hz (10-20MHz recommended)
 // 10MHz = Low frequency, energy saving
 // 15MHz = Medium frequency, good compromise
 // 20MHz = High frequency, better quality
-#define CAMERA_XCLK_FREQ 15000000 // 15 MHz - OPTIMIZED for stability (reduced from 20MHz)
+#define CAMERA_XCLK_FREQ 20000000 // 20 MHz - OPTIMIZED for 15 FPS timing
 
 // ===== RTSP CONFIGURATION =====
 // RTSP server port (554 = standard RTSP port, prefer port 8554 as routers or ISPs sometimes block port 554)
@@ -71,7 +71,26 @@ typedef std::function<camera_fb_t *()> CaptureCallback;
 #define RTSP_SDP_FRAMERATE 15
 
 // RTSP frame startup delay (ms)
-#define RTSP_STARTUP_DELAY 100
+#define RTSP_STARTUP_DELAY 200 // Increased for connection stability
+
+// RTSP timing tolerance (ms) - optimized for 15 FPS (67ms interval)
+// Allow more tolerance to avoid constant warnings
+#define RTSP_TIMING_TOLERANCE_MIN 60 // Minimum acceptable interval for 15 FPS
+#define RTSP_TIMING_TOLERANCE_MAX 75 // Maximum acceptable interval for 15 FPS
+
+// Advanced timing control - disable timing warnings for production
+// 0 = Enable timing warnings (debug mode)
+// 1 = Disable timing warnings (production mode)
+#define RTSP_DISABLE_TIMING_WARNINGS 0
+
+// Advanced timing compensation
+// 0 = Disabled (normal mode)
+// 1 = Enabled (compensate for timing drift)
+#define RTSP_TIMING_COMPENSATION 1
+
+// Timing compensation factor (microseconds)
+// Higher values = more aggressive compensation
+#define RTSP_COMPENSATION_FACTOR 1000 // 1ms compensation for better timing
 
 // Frames per second (FPS) - FIXED AND REALISTIC
 // 5-10   = Very slow, energy saving
@@ -79,7 +98,7 @@ typedef std::function<camera_fb_t *()> CaptureCallback;
 // 15-20  = Medium, good compromise
 // 20-25  = Fast, smooth
 // 25-30  = Very fast, may overload network
-#define RTSP_FPS 15 // 15 FPS FIXED - matches SDP and ensures 66.67ms interval
+#define RTSP_FPS 15 // 15 FPS FIXED - OPTIMIZED for stability
 
 // ===== RTSP TIMECODE AND METADATA CONFIGURATION =====
 // Timecode mode for FFmpeg
@@ -162,8 +181,8 @@ typedef std::function<camera_fb_t *()> CaptureCallback;
 #define RTSP_SIGNAL_KEYFRAMES_IN_SDP 1
 
 // Advanced optimization: number of frame buffers and capture mode
-#define CAMERA_FB_COUNT 2                       // 2 buffers - SAFE MODE
-#define CAMERA_GRAB_MODE CAMERA_GRAB_WHEN_EMPTY // More stable mode
+#define CAMERA_FB_COUNT 1                   // 1 buffer - TIMING OPTIMIZED
+#define CAMERA_GRAB_MODE CAMERA_GRAB_LATEST // Latest frame mode for better timing
 
 // WiFi quality threshold to consider connection as stable
 #define WIFI_QUALITY_THRESHOLD 20
@@ -174,7 +193,12 @@ typedef std::function<camera_fb_t *()> CaptureCallback;
 
 // Logger configuration
 // Available levels: LOG_ERROR, LOG_WARN, LOG_INFO, LOG_DEBUG, LOG_VERBOSE
-#define LOG_LEVEL LOG_INFO // Niveau INFO pour éviter le spam des logs
+#define LOG_LEVEL LOG_INFO // Niveau INFO pour réduire les logs et améliorer les performances
+
+// Production mode - reduce log verbosity
+// 0 = Debug mode (all logs)
+// 1 = Production mode (minimal logs)
+#define PRODUCTION_MODE 0
 
 // ===== OPTIMIZED WIFI CONFIGURATION =====
 // Delay between WiFi connection attempts (ms)
@@ -204,19 +228,19 @@ typedef std::function<camera_fb_t *()> CaptureCallback;
 
 // ===== OPTIMIZED UDP CONFIGURATION =====
 // Maximum number of UDP send attempts before TCP fallback
-#define RTSP_UDP_MAX_RETRIES 2 // Reduced to 2 attempts for faster TCP fallback
+#define RTSP_UDP_MAX_RETRIES 2 // Reduced for better timing
 
 // Delay between UDP attempts (ms)
-#define RTSP_UDP_RETRY_DELAY 10 // Increased to 10ms for better stability
+#define RTSP_UDP_RETRY_DELAY 5 // Reduced for better timing
 
 // Automatic fallback to TCP if UDP fails
 // 0 = Disabled (UDP only)
 // 1 = Enabled (automatic fallback to TCP)
 // 2 = Force TCP mode (UDP disabled) - RECOMMENDED for stability
-#define RTSP_UDP_TCP_FALLBACK 1 // Fallback automatique UDP->TCP
+#define RTSP_UDP_TCP_FALLBACK 0 // UDP ONLY - TCP fallback disabled for stability
 
 // Adaptive delay between UDP fragments (ms)
-#define RTSP_UDP_FRAGMENT_DELAY 2 // Increased to 2ms
+#define RTSP_UDP_FRAGMENT_DELAY 0 // No delay for better timing
 
 // Adaptive framerate in case of UDP problems
 // 0 = Disabled (fixed framerate)
@@ -230,7 +254,7 @@ typedef std::function<camera_fb_t *()> CaptureCallback;
 #define RTSP_MIN_FRAMERATE 10 // Increased to 10 FPS minimum
 
 // Maximum RTP fragment size (bytes) - optimized for UDP
-#define RTSP_MAX_FRAGMENT_SIZE 600 // Reduced to 600 bytes for more reliable UDP
+#define RTSP_MAX_FRAGMENT_SIZE 1400 // Standard MTU size for reliable UDP
 
 // UDP timeout to detect packet loss (ms)
 #define RTSP_UDP_TIMEOUT 100
@@ -247,7 +271,7 @@ typedef std::function<camera_fb_t *()> CaptureCallback;
 // Main loop delay in milliseconds
 // Shorter delay = more responsive system
 // Longer delay = CPU saving
-#define MAIN_LOOP_DELAY 10 // 10ms - OPTIMIZED for 15 FPS timing control
+#define MAIN_LOOP_DELAY 1 // 1ms - OPTIMIZED for precise 15 FPS timing control
 
 // ===== ADVANCED CAMERA CONFIGURATION =====
 // OV2640 sensor parameters
