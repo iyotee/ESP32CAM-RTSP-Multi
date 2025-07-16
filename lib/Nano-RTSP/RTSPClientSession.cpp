@@ -677,10 +677,11 @@ void RTSPClientSession::sendRTPFrame()
 
 void RTSPClientSession::sendRTPFrameTCP()
 {
-    camera_fb_t *fb = CameraManager::capture();
+    // In TCP mode, use forced capture without timing restrictions
+    camera_fb_t *fb = CameraManager::captureForced();
     if (!fb)
     {
-        LOG_ERROR("Capture error for RTSP TCP");
+        LOG_ERROR("Forced capture error for RTSP TCP");
         return;
     }
 

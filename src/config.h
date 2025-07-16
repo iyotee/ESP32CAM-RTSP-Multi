@@ -32,7 +32,7 @@ typedef std::function<camera_fb_t *()> CaptureCallback;
 // FRAMESIZE_HD     = 1280x720  (HD, very slow)
 // FRAMESIZE_SXGA   = 1280x1024 (very high resolution, very slow)
 // FRAMESIZE_UXGA   = 1600x1200 (ultra high resolution, extremely slow)
-#define CAMERA_FRAME_SIZE FRAMESIZE_QVGA // 320x240 - OPTIMIZED for stability and FFmpeg compatibility
+#define CAMERA_FRAME_SIZE FRAMESIZE_SVGA // 800x600 - OPTIMIZED for stability and FFmpeg compatibility
 
 // JPEG Quality (0-100)
 // 0-10   = Maximum quality, very large files
@@ -162,7 +162,7 @@ typedef std::function<camera_fb_t *()> CaptureCallback;
 #define RTSP_SIGNAL_KEYFRAMES_IN_SDP 1
 
 // Advanced optimization: number of frame buffers and capture mode
-#define CAMERA_FB_COUNT 2                       // 2 frame buffers for stability
+#define CAMERA_FB_COUNT 1                       // 1 frame buffer to save memory
 #define CAMERA_GRAB_MODE CAMERA_GRAB_WHEN_EMPTY // More stable mode
 
 // WiFi quality threshold to consider connection as stable
@@ -204,10 +204,10 @@ typedef std::function<camera_fb_t *()> CaptureCallback;
 
 // ===== OPTIMIZED UDP CONFIGURATION =====
 // Maximum number of UDP send attempts before TCP fallback
-#define RTSP_UDP_MAX_RETRIES 3 // Increased to 3 attempts
+#define RTSP_UDP_MAX_RETRIES 2 // Reduced to 2 attempts for faster TCP fallback
 
 // Delay between UDP attempts (ms)
-#define RTSP_UDP_RETRY_DELAY 5 // Increased to 5ms
+#define RTSP_UDP_RETRY_DELAY 10 // Increased to 10ms for better stability
 
 // Automatic fallback to TCP if UDP fails
 // 0 = Disabled (UDP only)
@@ -229,7 +229,7 @@ typedef std::function<camera_fb_t *()> CaptureCallback;
 #define RTSP_MIN_FRAMERATE 8 // Increased to 8 FPS minimum
 
 // Maximum RTP fragment size (bytes) - optimized for UDP
-#define RTSP_MAX_FRAGMENT_SIZE 800 // Reduced to 800 bytes for more reliable UDP
+#define RTSP_MAX_FRAGMENT_SIZE 600 // Reduced to 600 bytes for more reliable UDP
 
 // UDP timeout to detect packet loss (ms)
 #define RTSP_UDP_TIMEOUT 100

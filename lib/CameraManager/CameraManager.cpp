@@ -129,6 +129,39 @@ camera_fb_t *CameraManager::capture()
     return fb;
 }
 
+camera_fb_t *CameraManager::captureForced()
+{
+    if (!initialized)
+    {
+        LOG_ERROR("Attempt to capture without camera initialization");
+        return nullptr;
+    }
+
+    // FORCED CAPTURE - No timing restrictions
+    unsigned long currentTime = millis();
+
+    // Capture with error handling
+    camera_fb_t *fb = esp_camera_fb_get();
+    if (!fb)
+    {
+        LOG_ERROR("Forced image capture failed");
+        return nullptr;
+    }
+
+    // Validate captured frame
+    if (fb->len == 0 || fb->width == 0 || fb->height == 0)
+    {
+        LOG_ERROR("Invalid frame captured in forced mode - empty or corrupted");
+        esp_camera_fb_return(fb);
+        return nullptr;
+    }
+
+    LOG_DEBUGF("Forced frame captured: %d bytes, %dx%d, timestamp: %lu",
+               fb->len, fb->width, fb->height, currentTime);
+    
+    return fb;
+}
+
 /**
  * @brief Release camera frame buffer - CRITICAL for memory management
  *
