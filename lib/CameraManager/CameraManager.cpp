@@ -123,7 +123,32 @@ camera_fb_t *CameraManager::capture()
         return nullptr;
     }
 
-    LOG_DEBUGF("Frame captured successfully: %d bytes, %dx%d, timestamp: %lu",
+    // Validate JPEG markers (SOI and EOI)
+    if (fb->len >= 2)
+    {
+        // Check SOI marker (Start of Image): 0xFF 0xD8
+        if (fb->buf[0] != 0xFF || fb->buf[1] != 0xD8)
+        {
+            LOG_ERRORF("Invalid JPEG SOI marker - expected 0xFF 0xD8, got 0x%02X 0x%02X",
+                       fb->buf[0], fb->buf[1]);
+            esp_camera_fb_return(fb);
+            return nullptr;
+        }
+
+        // Check EOI marker (End of Image): 0xFF 0xD9
+        if (fb->len >= 4)
+        {
+            if (fb->buf[fb->len - 2] != 0xFF || fb->buf[fb->len - 1] != 0xD9)
+            {
+                LOG_ERRORF("Invalid JPEG EOI marker - expected 0xFF 0xD9, got 0x%02X 0x%02X",
+                           fb->buf[fb->len - 2], fb->buf[fb->len - 1]);
+                esp_camera_fb_return(fb);
+                return nullptr;
+            }
+        }
+    }
+
+    LOG_DEBUGF("Frame captured successfully: %d bytes, %dx%d, timestamp: %lu, JPEG valid",
                fb->len, fb->width, fb->height, currentTime);
 
     return fb;
@@ -156,9 +181,34 @@ camera_fb_t *CameraManager::captureForced()
         return nullptr;
     }
 
-    LOG_DEBUGF("Forced frame captured: %d bytes, %dx%d, timestamp: %lu",
+    // Validate JPEG markers (SOI and EOI) for forced capture
+    if (fb->len >= 2)
+    {
+        // Check SOI marker (Start of Image): 0xFF 0xD8
+        if (fb->buf[0] != 0xFF || fb->buf[1] != 0xD8)
+        {
+            LOG_ERRORF("Invalid JPEG SOI marker in forced mode - expected 0xFF 0xD8, got 0x%02X 0x%02X",
+                       fb->buf[0], fb->buf[1]);
+            esp_camera_fb_return(fb);
+            return nullptr;
+        }
+
+        // Check EOI marker (End of Image): 0xFF 0xD9
+        if (fb->len >= 4)
+        {
+            if (fb->buf[fb->len - 2] != 0xFF || fb->buf[fb->len - 1] != 0xD9)
+            {
+                LOG_ERRORF("Invalid JPEG EOI marker in forced mode - expected 0xFF 0xD9, got 0x%02X 0x%02X",
+                           fb->buf[fb->len - 2], fb->buf[fb->len - 1]);
+                esp_camera_fb_return(fb);
+                return nullptr;
+            }
+        }
+    }
+
+    LOG_DEBUGF("Forced frame captured: %d bytes, %dx%d, timestamp: %lu, JPEG valid",
                fb->len, fb->width, fb->height, currentTime);
-    
+
     return fb;
 }
 

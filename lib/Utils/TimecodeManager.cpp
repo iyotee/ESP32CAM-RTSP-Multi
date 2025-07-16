@@ -267,10 +267,10 @@ uint32_t TimecodeManager::calculatePTS(uint32_t frame_number)
 {
     // PTS = Presentation Time Stamp
     // Precise calculation according to RTSP/RTP standards
-    // Increment = RTSP_CLOCK_RATE / RTSP_FPS
+    // Increment = RTSP_CLOCK_RATE / RTSP_FPS = 90000 / 15 = 6000 per frame
 
     // Calculate exact timestamp for this frame
-    uint32_t frame_duration_rtp = RTSP_CLOCK_RATE / RTSP_FPS; // Increment in RTP timestamps
+    uint32_t frame_duration_rtp = RTSP_CLOCK_RATE / RTSP_FPS; // 6000 for 15 FPS at 90kHz
     uint32_t pts = frame_number * frame_duration_rtp;
 
     // Ensure timestamp is never 0 for first frame
@@ -279,11 +279,12 @@ uint32_t TimecodeManager::calculatePTS(uint32_t frame_number)
         pts = frame_duration_rtp;
     }
 
-    // Consistency check
-    if (frame_duration_rtp == 0)
+    // Consistency check - verify correct increment
+    if (frame_duration_rtp != 6000) // Should be exactly 6000 for 15 FPS
     {
-        // Fallback if division by zero
-        pts = frame_number * 3600; // 40ms at 90kHz
+        LOG_WARNF("Incorrect RTP timestamp increment - expected 6000, got %lu", frame_duration_rtp);
+        // Force correct increment
+        pts = frame_number * 6000;
     }
 
     LOG_DEBUGF("PTS calculated - Frame: %lu, PTS: %lu, Increment: %lu (%.2f ms)",

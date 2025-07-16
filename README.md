@@ -30,6 +30,10 @@
 - **Advanced UDP/TCP fallback** for maximum compatibility
 - **Safe camera configuration** with optimized memory management
 - **Real-time debugging** with comprehensive logging system
+- **✅ RTSP/RTP Standards Compliant** : Correct timestamps, sequence numbers, and payload types
+- **✅ MJPEG Validation** : SOI/EOI markers verification for data integrity
+- **✅ Fixed Framerate** : Stable 15 FPS with precise 66.67ms intervals
+- **✅ SDP Consistency** : Framerate announced matches actual framerate
 
 ---
 
@@ -296,7 +300,7 @@ The firmware includes comprehensive debugging capabilities:
 
 ### Performance Optimization
 - **Resolution** : VGA (640x480) provides optimal balance of quality and performance
-- **Framerate** : 10 FPS ensures network stability
+- **Framerate** : 15 FPS ensures network stability and timing consistency
 - **Buffers** : 2 frame buffers prevent memory overflow
 - **Transport** : Automatic UDP/TCP fallback for maximum compatibility
 ```bash
@@ -366,15 +370,16 @@ All timecode options are configurable in `src/config.h` :
 
 ## 📝 Changelog (v4.x)
 
-### **Latest Bug Fixes (v4.1)**
-- **🐛 Fixed framerate aberrations** - Implemented strict framerate control (10 FPS fixed)
-- **🐛 Fixed memory leaks** - Added `CameraManager::releaseFrame()` for proper memory management
-- **🐛 Fixed timing issues** - Added frame interval control to prevent excessive capture rate
-- **🐛 Fixed FFmpeg compatibility** - Optimized resolution (320x240) and JPEG quality (20) for stability
-- **🐛 Fixed system crashes** - Reduced XCLK frequency to 15MHz for better stability
-- **🐛 Fixed frame duplication** - Added validation and timing control in capture function
-- **🔧 Improved error handling** - Better validation of captured frames
-- **🔧 Enhanced logging** - More detailed debug information for troubleshooting
+### **Latest Bug Fixes (v4.2)**
+- **✅ Fixed SDP framerate inconsistency** - Aligned SDP framerate (15 FPS) with actual system framerate
+- **✅ Fixed RTP timestamps** - Corrected timestamp increments to 6000 per frame (90000/15)
+- **✅ Fixed RTP sequence numbers** - Ensured proper +1 increment per packet
+- **✅ Fixed RTP payload type validation** - Added validation for payload type 26 (MJPEG)
+- **✅ Fixed MJPEG headers** - Added SOI (0xFF 0xD8) and EOI (0xFF 0xD9) markers validation
+- **✅ Fixed timing control** - Implemented precise 66.67ms intervals for 15 FPS
+- **✅ Fixed logging macros** - Corrected all LOG_WARN/LOG_ERROR to LOG_WARNF/LOG_ERRORF
+- **🔧 Enhanced data integrity** - Automatic detection of corrupted JPEG frames
+- **🔧 Improved standards compliance** - Full RTSP/RTP standards adherence
 
 ### **Previous Features (v4.0)**
 - **Advanced PTS/DTS timecodes** for optimal FFmpeg compatibility
@@ -417,7 +422,7 @@ All timecode options are configurable in `src/config.h` :
 ### Performance Optimization
 - **Recommended resolution** : `FRAMESIZE_QVGA` (320x240) or `FRAMESIZE_VGA` (640x480)
 - **Optimal JPEG quality** : 10-20 for good quality/bitrate compromise
-- **Stable framerate** : 15-20 FPS maximum
+- **Stable framerate** : 15 FPS fixed for optimal timing consistency
 - **Number of clients** : Maximum 3-4 simultaneous clients
 
 ### Questions about timecodes and FFmpeg

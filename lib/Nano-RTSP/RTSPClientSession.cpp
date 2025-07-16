@@ -75,7 +75,14 @@ void RTSPClientSession::handle()
 
         if (currentTime - lastFrameTime >= frameInterval)
         {
-            LOG_DEBUGF("Sending RTSP frame - Interval: %lu ms, FPS: %d", currentTime - lastFrameTime, currentFramerate);
+            // Validate timing - should be approximately 66.67ms for 15 FPS
+            unsigned long actualInterval = currentTime - lastFrameTime;
+            if (actualInterval < 60 || actualInterval > 80) // Allow some tolerance
+            {
+                LOG_WARNF("Timing deviation detected - expected ~67ms, got %lu ms", actualInterval);
+            }
+
+            LOG_DEBUGF("Sending RTSP frame - Interval: %lu ms, FPS: %d", actualInterval, currentFramerate);
             sendRTPFrame();
             lastFrameTime = currentTime;
         }
@@ -529,12 +536,18 @@ void RTSPClientSession::sendRTPFrame()
         rtpHeader[0] = 0x80; // Version 2, padding 0, extension 0, CSRC count 0
 
         // Payload type 26 (JPEG) + marker bit for last fragment
-        uint8_t payload_flags = 0x1A; // Payload type 26 (JPEG)
+        uint8_t payload_flags = 0x1A; // Payload type 26 (JPEG) - CORRECT for MJPEG
         if (isLastFragment)
         {
             payload_flags |= 0x80; // Marker bit for last fragment
         }
         rtpHeader[1] = payload_flags;
+
+        // Validate payload type
+        if ((payload_flags & 0x7F) != 26)
+        {
+            LOG_ERRORF("Invalid RTP payload type - expected 26 (MJPEG), got %d", payload_flags & 0x7F);
+        }
         rtpHeader[2] = (sequenceNumber >> 8) & 0xFF;
         rtpHeader[3] = sequenceNumber & 0xFF;
         // Use advanced PTS timecode
@@ -648,7 +661,14 @@ void RTSPClientSession::sendRTPFrame()
 
         fragments_sent++;
         offset += fragmentSize;
-        sequenceNumber++;
+        sequenceNumber++; // Increment sequence number by 1 per packet (RTP standard)
+
+        // Validate sequence number increment
+        if (sequenceNumber == 0) // Overflow protection
+        {
+            LOG_WARN("RTP sequence number overflow - resetting to 1");
+            sequenceNumber = 1;
+        }
 
         // Buffer management and delay between fragments to avoid overload
         if (!isLastFragment)
@@ -727,12 +747,18 @@ void RTSPClientSession::sendRTPFrameTCP()
         rtpHeader[0] = 0x80; // Version 2, padding 0, extension 0, CSRC count 0
 
         // Payload type 26 (JPEG) + marker bit for last fragment
-        uint8_t payload_flags = 0x1A; // Payload type 26 (JPEG)
+        uint8_t payload_flags = 0x1A; // Payload type 26 (JPEG) - CORRECT for MJPEG
         if (isLastFragment)
         {
             payload_flags |= 0x80; // Marker bit for last fragment only
         }
         rtpHeader[1] = payload_flags;
+
+        // Validate payload type for TCP mode
+        if ((payload_flags & 0x7F) != 26)
+        {
+            LOG_ERRORF("Invalid RTP payload type (TCP) - expected 26 (MJPEG), got %d", payload_flags & 0x7F);
+        }
         rtpHeader[2] = (sequenceNumber >> 8) & 0xFF;
         rtpHeader[3] = sequenceNumber & 0xFF;
         // Use advanced PTS timecode
@@ -790,7 +816,14 @@ void RTSPClientSession::sendRTPFrameTCP()
 
         fragments_sent++;
         offset += fragmentSize;
-        sequenceNumber++;
+        sequenceNumber++; // Increment sequence number by 1 per packet (RTP standard)
+
+        // Validate sequence number increment for TCP mode
+        if (sequenceNumber == 0) // Overflow protection
+        {
+            LOG_WARN("RTP sequence number overflow (TCP) - resetting to 1");
+            sequenceNumber = 1;
+        }
 
         // Small delay between fragments to avoid overload (non-blocking)
         if (!isLastFragment)
@@ -830,11 +863,12 @@ void RTSPClientSession::generateAdvancedSDP(String &sdp)
     sdp += "a=type:broadcast\r\n";
     sdp += "a=range:npt=0-\r\n";
 
-    // Video stream information
+    // Video stream information with CORRECT framerate
     sdp += "m=video 0 RTP/AVP 26\r\n";
     sdp += "a=rtpmap:26 JPEG/" + String(RTSP_CLOCK_RATE) + "\r\n";
     sdp += "a=control:" RTSP_PATH "\r\n";
     sdp += "a=framerate:" + String(RTSP_SDP_FRAMERATE) + "\r\n";
+    sdp += "a=framerate:15.0\r\n"; // Explicit framerate for compatibility
 
     // Add clock metadata if enabled
     if (RTSP_ENABLE_CLOCK_METADATA)

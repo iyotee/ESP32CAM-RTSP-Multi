@@ -19,8 +19,8 @@ typedef std::function<camera_fb_t *()> CaptureCallback;
 // ===== WIFI CONFIGURATION =====
 // ⚠️  MODIFY THESE VALUES BEFORE USE !
 // Replace with your own WiFi credentials
-#define WIFI_SSID "YOUR_WIFI_SSID_HERE"
-#define WIFI_PASSWORD "YOUR_WIFI_PASSWORD_HERE"
+#define WIFI_SSID "YOUR_WIFI_SSID"
+#define WIFI_PASSWORD "YOUR_WIFI_PASSWORD"
 
 // ===== CAMERA CONFIGURATION =====
 // Camera resolution - Choose according to your needs:
@@ -67,8 +67,8 @@ typedef std::function<camera_fb_t *()> CaptureCallback;
 #define RTSP_CLIENT_PORT_RANGE "8000-8001"
 #define RTSP_SERVER_PORT_RANGE "8002-8003"
 
-// Framerate in SDP
-#define RTSP_SDP_FRAMERATE 30
+// Framerate in SDP - MUST MATCH REAL FRAMERATE
+#define RTSP_SDP_FRAMERATE 15
 
 // RTSP frame startup delay (ms)
 #define RTSP_STARTUP_DELAY 100
@@ -79,7 +79,7 @@ typedef std::function<camera_fb_t *()> CaptureCallback;
 // 15-20  = Medium, good compromise
 // 20-25  = Fast, smooth
 // 25-30  = Very fast, may overload network
-#define RTSP_FPS 10 // 10 FPS FIXED - prevents framerate aberrations and ensures stability
+#define RTSP_FPS 15 // 15 FPS FIXED - matches SDP and ensures 66.67ms interval
 
 // ===== RTSP TIMECODE AND METADATA CONFIGURATION =====
 // Timecode mode for FFmpeg
@@ -227,7 +227,7 @@ typedef std::function<camera_fb_t *()> CaptureCallback;
 #define RTSP_UDP_ERROR_THRESHOLD 5 // Increased to 5 errors
 
 // Minimum framerate in case of UDP problems
-#define RTSP_MIN_FRAMERATE 8 // Increased to 8 FPS minimum
+#define RTSP_MIN_FRAMERATE 10 // Increased to 10 FPS minimum
 
 // Maximum RTP fragment size (bytes) - optimized for UDP
 #define RTSP_MAX_FRAGMENT_SIZE 600 // Reduced to 600 bytes for more reliable UDP
@@ -247,7 +247,7 @@ typedef std::function<camera_fb_t *()> CaptureCallback;
 // Main loop delay in milliseconds
 // Shorter delay = more responsive system
 // Longer delay = CPU saving
-#define MAIN_LOOP_DELAY 20 // 20ms - OPTIMIZED for stability and framerate control
+#define MAIN_LOOP_DELAY 10 // 10ms - OPTIMIZED for 15 FPS timing control
 
 // ===== ADVANCED CAMERA CONFIGURATION =====
 // OV2640 sensor parameters
