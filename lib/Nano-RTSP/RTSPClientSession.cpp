@@ -695,7 +695,8 @@ void RTSPClientSession::sendRTPFrame()
 
         fragments_sent++;
         offset += fragmentSize;
-        sequenceNumber++; // Increment sequence number by 1 per packet (RTP standard)
+        // Sequence number is incremented per packet (RTP standard)
+        sequenceNumber++;
 
         // Validate sequence number increment
         if (sequenceNumber == 0) // Overflow protection
@@ -730,12 +731,12 @@ void RTSPClientSession::sendRTPFrame()
     }
     else if (frameSentSuccessfully)
     {
-        LOG_DEBUGF("UDP frame sent successfully - Fragments: %d, Sequence: %d, Timestamp: %lu",
-                   fragments_sent, sequenceNumber, currentTimecode.pts);
+        LOG_DEBUGF("UDP frame sent successfully - Fragments: %d, Sequence: %d, Timestamp: %lu, Frame: %lu",
+                   fragments_sent, sequenceNumber, currentTimecode.pts, timecodeManager.getFrameCounter());
     }
 
     esp_camera_fb_return(fb);
-    timestamp += RTSP_CLOCK_RATE / RTSP_FPS; // Increment timestamp for next frame
+    // Timestamp is managed by TimecodeManager, no manual increment needed
 }
 
 void RTSPClientSession::sendRTPFrameTCP()
@@ -868,11 +869,12 @@ void RTSPClientSession::sendRTPFrameTCP()
         }
     }
 
-    LOG_DEBUGF("TCP frame sent - Fragments: %d, Sequence: %d, Timestamp: %lu", fragments_sent, sequenceNumber, currentTimecode.pts);
+    LOG_DEBUGF("TCP frame sent - Fragments: %d, Sequence: %d, Timestamp: %lu, Frame: %lu",
+               fragments_sent, sequenceNumber, currentTimecode.pts, timecodeManager.getFrameCounter());
 
     // CRITICAL: Release frame buffer to prevent memory leaks
     CameraManager::releaseFrame(fb);
-    timestamp += RTSP_CLOCK_RATE / RTSP_FPS; // Increment timestamp for next frame
+    // Timestamp is managed by TimecodeManager, no manual increment needed
 }
 
 String RTSPClientSession::generateSessionId()
@@ -1000,7 +1002,7 @@ void RTSPClientSession::updateTimecodeForFrame()
     // Generate new timecode for current frame
     currentTimecode = timecodeManager.generateTimecode();
 
-    // Update RTP timestamp
+    // Update RTP timestamp - use PTS directly
     timestamp = currentTimecode.pts;
 
     LOG_DEBUGF("Timecode updated - PTS: %lu, DTS: %lu, Frame: %lu", currentTimecode.pts, currentTimecode.dts, timecodeManager.getFrameCounter());
