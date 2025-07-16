@@ -79,7 +79,7 @@ void RTSPClientSession::handle()
             unsigned long actualInterval = currentTime - lastFrameTime;
             if (actualInterval < 60 || actualInterval > 80) // Allow some tolerance
             {
-                LOG_WARNF("Timing deviation detected - expected ~67ms, got %lu ms", actualInterval);
+                Logger::warnf("Timing deviation detected - expected ~67ms, got %lu ms", actualInterval);
             }
 
             LOG_DEBUGF("Sending RTSP frame - Interval: %lu ms, FPS: %d", actualInterval, currentFramerate);
@@ -546,7 +546,7 @@ void RTSPClientSession::sendRTPFrame()
         // Validate payload type
         if ((payload_flags & 0x7F) != 26)
         {
-            LOG_ERRORF("Invalid RTP payload type - expected 26 (MJPEG), got %d", payload_flags & 0x7F);
+            Logger::errorf("Invalid RTP payload type - expected 26 (MJPEG), got %d", payload_flags & 0x7F);
         }
         rtpHeader[2] = (sequenceNumber >> 8) & 0xFF;
         rtpHeader[3] = sequenceNumber & 0xFF;
@@ -757,7 +757,7 @@ void RTSPClientSession::sendRTPFrameTCP()
         // Validate payload type for TCP mode
         if ((payload_flags & 0x7F) != 26)
         {
-            LOG_ERRORF("Invalid RTP payload type (TCP) - expected 26 (MJPEG), got %d", payload_flags & 0x7F);
+            Logger::errorf("Invalid RTP payload type (TCP) - expected 26 (MJPEG), got %d", payload_flags & 0x7F);
         }
         rtpHeader[2] = (sequenceNumber >> 8) & 0xFF;
         rtpHeader[3] = sequenceNumber & 0xFF;

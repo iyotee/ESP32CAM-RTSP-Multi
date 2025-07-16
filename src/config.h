@@ -19,8 +19,8 @@ typedef std::function<camera_fb_t *()> CaptureCallback;
 // ===== WIFI CONFIGURATION =====
 // ⚠️  MODIFY THESE VALUES BEFORE USE !
 // Replace with your own WiFi credentials
-#define WIFI_SSID "YOUR_WIFI_SSID"
-#define WIFI_PASSWORD "YOUR_WIFI_PASSWORD"
+#define WIFI_SSID "YOUR_WIFI_SSID_HERE"
+#define WIFI_PASSWORD "YOUR_WIFI_PASSWORD_HERE"
 
 // ===== CAMERA CONFIGURATION =====
 // Camera resolution - Choose according to your needs:
@@ -32,7 +32,7 @@ typedef std::function<camera_fb_t *()> CaptureCallback;
 // FRAMESIZE_HD     = 1280x720  (HD, very slow)
 // FRAMESIZE_SXGA   = 1280x1024 (very high resolution, very slow)
 // FRAMESIZE_UXGA   = 1600x1200 (ultra high resolution, extremely slow)
-#define CAMERA_FRAME_SIZE FRAMESIZE_VGA // 640x480
+#define CAMERA_FRAME_SIZE FRAMESIZE_SVGA // 800x600
 
 // JPEG Quality (0-100)
 // 0-10   = Maximum quality, very large files

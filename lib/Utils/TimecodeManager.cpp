@@ -282,7 +282,7 @@ uint32_t TimecodeManager::calculatePTS(uint32_t frame_number)
     // Consistency check - verify correct increment
     if (frame_duration_rtp != 6000) // Should be exactly 6000 for 15 FPS
     {
-        LOG_WARNF("Incorrect RTP timestamp increment - expected 6000, got %lu", frame_duration_rtp);
+        Logger::warnf("Incorrect RTP timestamp increment - expected 6000, got %lu", frame_duration_rtp);
         // Force correct increment
         pts = frame_number * 6000;
     }
