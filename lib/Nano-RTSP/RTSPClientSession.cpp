@@ -247,11 +247,18 @@ void RTSPClientSession::processRequest()
             LOG_DEBUG("Transport header received: " + transportLine);
             LOG_DEBUG("Analyzing requested transport...");
 
-            // Check if client requests TCP interleaved
-            if (transportLine.indexOf("interleaved") != -1 || transportLine.indexOf("RTP/AVP/TCP") != -1)
+            // Check if client requests TCP interleaved or if we force TCP mode
+            if (transportLine.indexOf("interleaved") != -1 || transportLine.indexOf("RTP/AVP/TCP") != -1 || RTSP_UDP_TCP_FALLBACK == 2)
             {
                 useTcpInterleaved = true;
-                LOG_INFO("Client requests TCP interleaved");
+                if (RTSP_UDP_TCP_FALLBACK == 2)
+                {
+                    LOG_INFO("Forcing TCP interleaved mode (UDP disabled)");
+                }
+                else
+                {
+                    LOG_INFO("Client requests TCP interleaved");
+                }
 
                 // Extract interleaved channels
                 int channelIndex = transportLine.indexOf("interleaved=");
@@ -288,8 +295,16 @@ void RTSPClientSession::processRequest()
             }
             else
             {
-                useTcpInterleaved = false;
-                LOG_INFO("Client requests UDP");
+                if (RTSP_UDP_TCP_FALLBACK == 2)
+                {
+                    useTcpInterleaved = true;
+                    LOG_INFO("Client requested UDP but forcing TCP mode");
+                }
+                else
+                {
+                    useTcpInterleaved = false;
+                    LOG_INFO("Client requests UDP");
+                }
 
                 // Extract client_port for UDP
                 int clientPortIndex = transportLine.indexOf("client_port=");
@@ -464,7 +479,7 @@ void RTSPClientSession::sendRTSPResponse(const char *status, const char *headers
 void RTSPClientSession::sendRTPFrame()
 {
     // Check configuration according to transport mode
-    if (useTcpInterleaved)
+    if (useTcpInterleaved || RTSP_UDP_TCP_FALLBACK == 2)
     {
         sendRTPFrameTCP();
         return;
@@ -587,7 +602,7 @@ void RTSPClientSession::sendRTPFrame()
                 retryCount++;
 
                 // If last attempt and UDP fails, try TCP
-                if (retryCount >= RTSP_UDP_MAX_RETRIES && client.connected() && RTSP_UDP_TCP_FALLBACK)
+                if (retryCount >= RTSP_UDP_MAX_RETRIES && client.connected() && RTSP_UDP_TCP_FALLBACK >= 1)
                 {
                     LOG_INFO("Fallback to TCP interleaved after repeated UDP errors");
                     useTcpInterleaved = true;
@@ -660,7 +675,7 @@ void RTSPClientSession::sendRTPFrame()
     CameraManager::releaseFrame(fb);
 
     // If UDP failed and TCP fallback is enabled, send via TCP
-    if (!frameSentSuccessfully && useTcpInterleaved && client.connected())
+    if (!frameSentSuccessfully && (useTcpInterleaved || RTSP_UDP_TCP_FALLBACK >= 1) && client.connected())
     {
         LOG_INFO("Sending frame via TCP after UDP failure");
         sendRTPFrameTCP();

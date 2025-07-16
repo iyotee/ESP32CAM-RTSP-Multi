@@ -86,13 +86,19 @@ void setup()
 
     // === CAMERA INITIALIZATION ===
     LOG_INFO("Initializing ESP32-CAM camera...");
-    if (!CameraManager::begin())
+    LOG_INFO("Starting camera initialization process...");
+    
+    bool cameraInitResult = CameraManager::begin();
+    LOG_INFOF("Camera initialization result: %s", cameraInitResult ? "SUCCESS" : "FAILED");
+    
+    if (!cameraInitResult)
     {
         LOG_ERROR("Camera initialization failed - Restarting...");
         ESP.restart();
     }
 
     LOG_INFO("Camera initialized successfully");
+    LOG_INFO("Getting camera information...");
     LOG_INFO(CameraManager::getCameraInfo().c_str());
 
     // === SERVER STARTUP ===
@@ -105,18 +111,23 @@ void setup()
         LOG_ERROR("RTSP server allocation failed");
         ESP.restart();
     }
+
+    LOG_INFOF("RTSP server created on port %d", RTSP_PORT);
     rtspServer->begin();
+    LOG_INFO("RTSP server started successfully");
 
     // HTTP MJPEG Server
     LOG_INFO("Starting HTTP MJPEG server...");
     httpMJPEGServer.setCaptureCallback([]() -> camera_fb_t *
                                        { return CameraManager::capture(); });
     httpMJPEGServer.begin();
+    LOG_INFO("HTTP MJPEG server started successfully");
 
     // === CONFIGURATION COMPLETE ===
     LOG_INFO("==========================================");
     LOG_INFO("Configuration completed successfully!");
     LOG_INFO("==========================================");
+    LOG_INFO("System ready - entering main loop...");
 
     // Display access URLs
     String localIP = WiFiManager::getLocalIP().toString();
@@ -170,6 +181,10 @@ void loop()
     if (rtspServer)
     {
         rtspServer->handleClients();
+    }
+    else
+    {
+        LOG_ERROR("RTSP server is null!");
     }
 
     // HTTP MJPEG client management

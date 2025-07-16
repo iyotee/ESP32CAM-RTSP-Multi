@@ -19,8 +19,8 @@ typedef std::function<camera_fb_t *()> CaptureCallback;
 // ===== WIFI CONFIGURATION =====
 // ⚠️  MODIFY THESE VALUES BEFORE USE !
 // Replace with your own WiFi credentials
-#define WIFI_SSID "YOUR_WIFI_SSID"
-#define WIFI_PASSWORD "YOUR_WIFI_PASSWORD"
+#define WIFI_SSID "YOUR_WIFI_SSID_HERE"
+#define WIFI_PASSWORD "YOUR_WIFI_PASSWORD_HERE"
 
 // ===== CAMERA CONFIGURATION =====
 // Camera resolution - Choose according to your needs:
@@ -32,7 +32,7 @@ typedef std::function<camera_fb_t *()> CaptureCallback;
 // FRAMESIZE_HD     = 1280x720  (HD, very slow)
 // FRAMESIZE_SXGA   = 1280x1024 (very high resolution, very slow)
 // FRAMESIZE_UXGA   = 1600x1200 (ultra high resolution, extremely slow)
-#define CAMERA_FRAME_SIZE FRAMESIZE_SVGA // 800x600 - OPTIMIZED for stability and FFmpeg compatibility
+#define CAMERA_FRAME_SIZE FRAMESIZE_VGA // 640x480 - SAFE MODE
 
 // JPEG Quality (0-100)
 // 0-10   = Maximum quality, very large files
@@ -162,7 +162,7 @@ typedef std::function<camera_fb_t *()> CaptureCallback;
 #define RTSP_SIGNAL_KEYFRAMES_IN_SDP 1
 
 // Advanced optimization: number of frame buffers and capture mode
-#define CAMERA_FB_COUNT 1                       // 1 frame buffer to save memory
+#define CAMERA_FB_COUNT 2                       // 2 buffers - SAFE MODE
 #define CAMERA_GRAB_MODE CAMERA_GRAB_WHEN_EMPTY // More stable mode
 
 // WiFi quality threshold to consider connection as stable
@@ -174,7 +174,7 @@ typedef std::function<camera_fb_t *()> CaptureCallback;
 
 // Logger configuration
 // Available levels: LOG_ERROR, LOG_WARN, LOG_INFO, LOG_DEBUG, LOG_VERBOSE
-#define LOG_LEVEL LOG_INFO // Default level: INFO (modifiable at runtime)
+#define LOG_LEVEL LOG_DEBUG // Affichage maximal des logs
 
 // ===== OPTIMIZED WIFI CONFIGURATION =====
 // Delay between WiFi connection attempts (ms)
@@ -212,7 +212,8 @@ typedef std::function<camera_fb_t *()> CaptureCallback;
 // Automatic fallback to TCP if UDP fails
 // 0 = Disabled (UDP only)
 // 1 = Enabled (automatic fallback to TCP)
-#define RTSP_UDP_TCP_FALLBACK 1
+// 2 = Force TCP mode (UDP disabled) - RECOMMENDED for stability
+#define RTSP_UDP_TCP_FALLBACK 1 // Fallback automatique UDP->TCP
 
 // Adaptive delay between UDP fragments (ms)
 #define RTSP_UDP_FRAGMENT_DELAY 2 // Increased to 2ms
