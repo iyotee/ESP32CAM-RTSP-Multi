@@ -32,7 +32,7 @@ typedef std::function<camera_fb_t *()> CaptureCallback;
 // FRAMESIZE_HD     = 1280x720  (HD, very slow)
 // FRAMESIZE_SXGA   = 1280x1024 (very high resolution, very slow)
 // FRAMESIZE_UXGA   = 1600x1200 (ultra high resolution, extremely slow)
-#define CAMERA_FRAME_SIZE FRAMESIZE_SVGA // 640x480 - OPTIMIZED for 15 FPS stability
+#define CAMERA_FRAME_SIZE FRAMESIZE_SVGA // 800x600 - TESTING higher resolution
 
 // JPEG Quality (0-100)
 // 0-10   = Maximum quality, very large files
@@ -41,13 +41,13 @@ typedef std::function<camera_fb_t *()> CaptureCallback;
 // 50-70  = Medium quality (recommended for RTSP)
 // 70-90  = Low quality
 // 90-100 = Very low quality, small files
-#define CAMERA_JPEG_QUALITY 25 // 25 = OPTIMIZED for 15 FPS timing
+#define CAMERA_JPEG_QUALITY 40 // 40 = OPTIMIZED for 800x600 resolution
 
 // XCLK frequency in Hz (10-20MHz recommended)
 // 10MHz = Low frequency, energy saving
 // 15MHz = Medium frequency, good compromise
 // 20MHz = High frequency, better quality
-#define CAMERA_XCLK_FREQ 20000000 // 20 MHz - OPTIMIZED for 15 FPS timing
+#define CAMERA_XCLK_FREQ 20000000 // 20 MHz - OPTIMIZED for 800x600 resolution
 
 // ===== RTSP CONFIGURATION =====
 // RTSP server port (554 = standard RTSP port, prefer port 8554 as routers or ISPs sometimes block port 554)
@@ -68,20 +68,20 @@ typedef std::function<camera_fb_t *()> CaptureCallback;
 #define RTSP_SERVER_PORT_RANGE "8002-8003"
 
 // Framerate in SDP - MUST MATCH REAL FRAMERATE
-#define RTSP_SDP_FRAMERATE 15
+#define RTSP_SDP_FRAMERATE 10
 
 // RTSP frame startup delay (ms)
-#define RTSP_STARTUP_DELAY 200 // Increased for connection stability
+#define RTSP_STARTUP_DELAY 500 // Increased for connection stability
 
 // RTSP timing tolerance (ms) - optimized for 15 FPS (67ms interval)
 // Allow more tolerance to avoid constant warnings
-#define RTSP_TIMING_TOLERANCE_MIN 60 // Minimum acceptable interval for 15 FPS
-#define RTSP_TIMING_TOLERANCE_MAX 75 // Maximum acceptable interval for 15 FPS
+#define RTSP_TIMING_TOLERANCE_MIN 80  // Minimum acceptable interval for 10 FPS
+#define RTSP_TIMING_TOLERANCE_MAX 120 // Maximum acceptable interval for 10 FPS
 
 // Advanced timing control - disable timing warnings for production
 // 0 = Enable timing warnings (debug mode)
 // 1 = Disable timing warnings (production mode)
-#define RTSP_DISABLE_TIMING_WARNINGS 0
+#define RTSP_DISABLE_TIMING_WARNINGS 1
 
 // Advanced timing compensation
 // 0 = Disabled (normal mode)
@@ -90,7 +90,7 @@ typedef std::function<camera_fb_t *()> CaptureCallback;
 
 // Timing compensation factor (microseconds)
 // Higher values = more aggressive compensation
-#define RTSP_COMPENSATION_FACTOR 1000 // 1ms compensation for better timing
+#define RTSP_COMPENSATION_FACTOR 2000 // 2ms compensation for better timing
 
 // Frames per second (FPS) - FIXED AND REALISTIC
 // 5-10   = Very slow, energy saving
@@ -98,7 +98,7 @@ typedef std::function<camera_fb_t *()> CaptureCallback;
 // 15-20  = Medium, good compromise
 // 20-25  = Fast, smooth
 // 25-30  = Very fast, may overload network
-#define RTSP_FPS 15 // 15 FPS FIXED - OPTIMIZED for stability
+#define RTSP_FPS 10 // 10 FPS FIXED - OPTIMIZED for stability
 
 // ===== RTSP TIMECODE AND METADATA CONFIGURATION =====
 // Timecode mode for FFmpeg
@@ -197,7 +197,7 @@ typedef std::function<camera_fb_t *()> CaptureCallback;
 #define RTSP_HLS_CLOSED_GOP 1
 
 // Advanced optimization: number of frame buffers and capture mode
-#define CAMERA_FB_COUNT 1                   // 1 buffer - TIMING OPTIMIZED
+#define CAMERA_FB_COUNT 2                   // 2 buffers - STABILITY OPTIMIZED
 #define CAMERA_GRAB_MODE CAMERA_GRAB_LATEST // Latest frame mode for better timing
 
 // WiFi quality threshold to consider connection as stable
@@ -253,7 +253,7 @@ typedef std::function<camera_fb_t *()> CaptureCallback;
 // 0 = Disabled (UDP only)
 // 1 = Enabled (automatic fallback to TCP)
 // 2 = Force TCP mode (UDP disabled) - RECOMMENDED for stability
-#define RTSP_UDP_TCP_FALLBACK 0 // UDP ONLY - TCP fallback disabled for stability
+#define RTSP_UDP_TCP_FALLBACK 2 // Force TCP mode - RECOMMENDED for HLS stability
 
 // Adaptive delay between UDP fragments (ms)
 #define RTSP_UDP_FRAGMENT_DELAY 0 // No delay for better timing
@@ -270,7 +270,7 @@ typedef std::function<camera_fb_t *()> CaptureCallback;
 #define RTSP_MIN_FRAMERATE 10 // Increased to 10 FPS minimum
 
 // Maximum RTP fragment size (bytes) - optimized for UDP
-#define RTSP_MAX_FRAGMENT_SIZE 1400 // Standard MTU size for reliable UDP
+#define RTSP_MAX_FRAGMENT_SIZE 1024 // Smaller fragments for TCP stability
 
 // UDP timeout to detect packet loss (ms)
 #define RTSP_UDP_TIMEOUT 100
@@ -287,7 +287,7 @@ typedef std::function<camera_fb_t *()> CaptureCallback;
 // Main loop delay in milliseconds
 // Shorter delay = more responsive system
 // Longer delay = CPU saving
-#define MAIN_LOOP_DELAY 1 // 1ms - OPTIMIZED for precise 15 FPS timing control
+#define MAIN_LOOP_DELAY 5 // 5ms - OPTIMIZED for 10 FPS timing control
 
 // ===== ADVANCED CAMERA CONFIGURATION =====
 // OV2640 sensor parameters
@@ -437,5 +437,36 @@ typedef struct
 #define RTSP_CLOCK_SYNC_OK 1
 #define RTSP_CLOCK_SYNC_ERROR 0
 #define RTSP_CLOCK_SYNC_PENDING 2
+
+// ===== HLS STABILITY OPTIMIZATIONS =====
+// Buffer size for RTSP sessions (bytes)
+#define RTSP_BUFFER_SIZE 8192 // Increased buffer for HLS stability
+
+// Maximum number of concurrent RTSP clients
+#define RTSP_MAX_CLIENTS 3 // Limited for stability
+
+// Health check interval (ms)
+#define HEALTH_CHECK_INTERVAL 5000 // 5 seconds
+
+// Watchdog timeout (ms)
+#define WATCHDOG_TIMEOUT 30000 // 30 seconds
+
+// TCP keepalive settings
+#define TCP_KEEPALIVE_IDLE 60    // 60 seconds
+#define TCP_KEEPALIVE_INTERVAL 5 // 5 seconds
+#define TCP_KEEPALIVE_COUNT 3    // 3 attempts
+
+// Memory optimization
+#define RTSP_MEMORY_POOL_SIZE 4096 // 4KB memory pool
+#define RTSP_SESSION_TIMEOUT 30000 // 30 seconds session timeout
+
+// Logging level (0=ERROR, 1=WARN, 2=INFO, 3=DEBUG)
+// #define LOG_LEVEL 2 // INFO level for production - COMMENTED to avoid conflict
+
+// Serial baud rate
+#define SERIAL_BAUD_RATE 115200
+
+// Camera grab mode for stability
+// #define CAMERA_GRAB_MODE CAMERA_GRAB_WHEN_EMPTY // Grab when buffer is empty - COMMENTED to avoid conflict
 
 #endif // CONFIG_H
