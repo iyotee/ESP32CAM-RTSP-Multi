@@ -19,8 +19,44 @@ typedef std::function<camera_fb_t *()> CaptureCallback;
 // ===== WIFI CONFIGURATION =====
 // ⚠️  MODIFY THESE VALUES BEFORE USE !
 // Replace with your own WiFi credentials
-#define WIFI_SSID "YOUR_WIFI_SSID_HERE"
-#define WIFI_PASSWORD "YOUR_WIFI_PASSWORD_HERE"
+#define WIFI_SSID "YOUR_WIFI_SSID"
+#define WIFI_PASSWORD "YOUR_WIFI_PASSWORD"
+
+// ===== STATIC IP CONFIGURATION =====
+// Choose between DHCP (automatic) or static IP configuration
+// 0 = Use DHCP (automatic IP assignment) - RECOMMENDED for most networks
+// 1 = Use static IP configuration (manual IP assignment)
+#define WIFI_USE_STATIC_IP 0
+
+// EXAMPLE: To enable static IP, change the line above to:
+// #define WIFI_USE_STATIC_IP 1
+// Then modify the IP configuration below to match your network.
+
+// Static IP configuration (only used if WIFI_USE_STATIC_IP = 1)
+// ⚠️  MODIFY THESE VALUES IF USING STATIC IP !
+// Make sure these values are compatible with your network
+//
+// Example configurations:
+// - Home network (192.168.1.x):
+//   WIFI_STATIC_IP "192.168.1.100"
+//   WIFI_STATIC_GATEWAY "192.168.1.1"
+//   WIFI_STATIC_SUBNET "255.255.255.0"
+//
+// - Office network (10.0.0.x):
+//   WIFI_STATIC_IP "10.0.0.50"
+//   WIFI_STATIC_GATEWAY "10.0.0.1"
+//   WIFI_STATIC_SUBNET "255.255.255.0"
+//
+// - Custom network (172.16.0.x):
+//   WIFI_STATIC_IP "172.16.0.10"
+//   WIFI_STATIC_GATEWAY "172.16.0.1"
+//   WIFI_STATIC_SUBNET "255.255.0.0"
+//
+// IMPORTANT: Make sure the IP address is not already used by another device!
+#define WIFI_STATIC_IP "192.168.1.100"     // ESP32 IP address
+#define WIFI_STATIC_GATEWAY "192.168.1.1"  // Router/Gateway IP address
+#define WIFI_STATIC_SUBNET "255.255.255.0" // Subnet mask
+#define WIFI_STATIC_DNS "8.8.8.8"          // Primary DNS server (Google DNS)
 
 // ===== CAMERA CONFIGURATION =====
 // Camera resolution - Choose according to your needs:

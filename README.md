@@ -203,6 +203,28 @@ ESP32CAM-RTSP-Multi/
 #define WIFI_PASSWORD "YOUR_WIFI_PASSWORD"
 ```
 
+### Static IP Configuration (Optional)
+By default, the ESP32 uses DHCP for automatic IP assignment. If you need a fixed IP address, you can configure static IP:
+
+**To enable static IP, modify in `src/config.h` :**
+```cpp
+// Enable static IP configuration
+#define WIFI_USE_STATIC_IP 1
+
+// Configure your network parameters
+#define WIFI_STATIC_IP "192.168.1.100"      // ESP32 IP address
+#define WIFI_STATIC_GATEWAY "192.168.1.1"   // Router/Gateway IP address
+#define WIFI_STATIC_SUBNET "255.255.255.0"  // Subnet mask
+#define WIFI_STATIC_DNS "8.8.8.8"           // Primary DNS server
+```
+
+**Example configurations for different networks :**
+- **Home network (192.168.1.x)** : Use `192.168.1.100` with gateway `192.168.1.1`
+- **Office network (10.0.0.x)** : Use `10.0.0.50` with gateway `10.0.0.1`
+- **Custom network (172.16.0.x)** : Use `172.16.0.10` with gateway `172.16.0.1`
+
+**⚠️ IMPORTANT : Make sure the IP address is not already used by another device!**
+
 ### Camera Configuration
 The firmware includes optimized camera settings for maximum stability:
 - **Safe resolution** : VGA (640x480) for optimal performance
@@ -402,6 +424,25 @@ All timecode options are configurable in `src/config.h` :
 - Verify that WiFi credentials in `config.h` are correct
 - Ensure the WiFi network is 2.4GHz (ESP32-CAM doesn't support 5GHz)
 - Check distance and WiFi signal strength
+
+#### Static IP configuration issues
+- **IP address conflict** : Make sure the static IP is not already used by another device
+- **Wrong gateway** : Verify that the gateway IP matches your router's IP address
+- **Wrong subnet mask** : Use `255.255.255.0` for most home networks (192.168.x.x)
+- **DNS issues** : Try using `8.8.8.8` (Google DNS) or your router's DNS
+- **Network compatibility** : Ensure the static IP is in the same subnet as your router
+
+**Advantages of static IP :**
+- **Fixed address** : ESP32 always has the same IP address
+- **Port forwarding** : Easier to configure router port forwarding
+- **Network integration** : Better for integration with other network devices
+- **Predictable access** : Always know the ESP32's IP address
+
+**When to use DHCP (default) :**
+- **Simple setup** : No network configuration needed
+- **Dynamic networks** : Works with changing network configurations
+- **Multiple devices** : Avoids IP conflicts automatically
+- **Plug and play** : Works immediately after flashing
 
 #### No video stream
 - Verify that the IP displayed in logs is correct

@@ -30,6 +30,35 @@ void WiFiManager::begin(const char *ssid, const char *password)
     // WiFi power configuration to avoid disconnections
     WiFi.setTxPower(WIFI_POWER_19_5dBm); // Maximum power
 
+    // Configure static IP if enabled
+    if (WIFI_USE_STATIC_IP)
+    {
+        LOG_INFO("Configuring static IP...");
+        LOG_INFOF("Static IP: %s", WIFI_STATIC_IP);
+        LOG_INFOF("Gateway: %s", WIFI_STATIC_GATEWAY);
+        LOG_INFOF("Subnet: %s", WIFI_STATIC_SUBNET);
+        LOG_INFOF("DNS: %s", WIFI_STATIC_DNS);
+
+        IPAddress staticIP, gateway, subnet, dns;
+
+        if (staticIP.fromString(WIFI_STATIC_IP) &&
+            gateway.fromString(WIFI_STATIC_GATEWAY) &&
+            subnet.fromString(WIFI_STATIC_SUBNET) &&
+            dns.fromString(WIFI_STATIC_DNS))
+        {
+            WiFi.config(staticIP, gateway, subnet, dns);
+            LOG_INFO("Static IP configuration applied successfully");
+        }
+        else
+        {
+            LOG_ERROR("Invalid static IP configuration - falling back to DHCP");
+        }
+    }
+    else
+    {
+        LOG_INFO("Using DHCP for automatic IP assignment");
+    }
+
     // Completely clean previous WiFi parameters
     WiFi.disconnect(true, true);
     delay(WIFI_CLEANUP_DELAY);
@@ -224,6 +253,26 @@ bool WiFiManager::reconnect()
     WiFi.setSleep(false);
     WiFi.setAutoReconnect(true);
 
+    // Configure static IP if enabled (same as in begin method)
+    if (WIFI_USE_STATIC_IP)
+    {
+        LOG_INFO("Reapplying static IP configuration...");
+        IPAddress staticIP, gateway, subnet, dns;
+
+        if (staticIP.fromString(WIFI_STATIC_IP) &&
+            gateway.fromString(WIFI_STATIC_GATEWAY) &&
+            subnet.fromString(WIFI_STATIC_SUBNET) &&
+            dns.fromString(WIFI_STATIC_DNS))
+        {
+            WiFi.config(staticIP, gateway, subnet, dns);
+            LOG_INFO("Static IP configuration reapplied successfully");
+        }
+        else
+        {
+            LOG_ERROR("Invalid static IP configuration during reconnection - falling back to DHCP");
+        }
+    }
+
     int attempts = 0;
     const int maxAttempts = 5;
     bool reconnectionSuccess = false;
@@ -241,12 +290,12 @@ bool WiFiManager::reconnect()
             delay(WIFI_DELAY_MS);
             waitAttempts++;
 
-                    // Quick error detection
-        if (WiFi.status() == WL_CONNECT_FAILED || WiFi.status() == WL_NO_SSID_AVAIL)
-        {
-            LOG_VERBOSEF("WiFi reconnection error (attempt %d): %d", attempts + 1, WiFi.status());
-            break;
-        }
+            // Quick error detection
+            if (WiFi.status() == WL_CONNECT_FAILED || WiFi.status() == WL_NO_SSID_AVAIL)
+            {
+                LOG_VERBOSEF("WiFi reconnection error (attempt %d): %d", attempts + 1, WiFi.status());
+                break;
+            }
         }
 
         if (WiFi.status() == WL_CONNECTED)
@@ -314,6 +363,26 @@ bool WiFiManager::handleAuthError()
     WiFi.setSleep(false);
     WiFi.setAutoReconnect(true);
     WiFi.setTxPower(WIFI_POWER_19_5dBm);
+
+    // Configure static IP if enabled (same as in begin method)
+    if (WIFI_USE_STATIC_IP)
+    {
+        LOG_INFO("Reapplying static IP configuration after auth error...");
+        IPAddress staticIP, gateway, subnet, dns;
+
+        if (staticIP.fromString(WIFI_STATIC_IP) &&
+            gateway.fromString(WIFI_STATIC_GATEWAY) &&
+            subnet.fromString(WIFI_STATIC_SUBNET) &&
+            dns.fromString(WIFI_STATIC_DNS))
+        {
+            WiFi.config(staticIP, gateway, subnet, dns);
+            LOG_INFO("Static IP configuration reapplied after auth error");
+        }
+        else
+        {
+            LOG_ERROR("Invalid static IP configuration after auth error - falling back to DHCP");
+        }
+    }
 
     // Wait longer before restarting
     delay(3000);
