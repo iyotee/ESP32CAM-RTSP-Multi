@@ -46,3 +46,6 @@ Thumbs.db
 # Backup files
 *.bak
 *.backup
+
+# user configuration files
+src/config.h

@@ -70,7 +70,7 @@ bool CameraManager::begin()
     if (s)
     {
         configureAdvancedSettings(s);
-        LOG_INFO("Advanced parameters configured");
+        LOG_DEBUG("Advanced parameters configured");
     }
     else
     {
@@ -238,13 +238,13 @@ std::string CameraManager::getCameraInfo()
     }
 
     std::string info = "ESP32-CAM Camera\n";
-    info += "Resolution: " + std::to_string(s->status.framesize) + "\n";
-    info += "JPEG Quality: " + std::to_string(s->status.quality) + "\n";
+    info += "Resolution:     " + std::to_string(s->status.framesize) + "\n";
+    info += "JPEG Quality:   " + std::to_string(s->status.quality) + "\n";
     info += "XCLK Frequency: " + std::to_string(CAMERA_XCLK_FREQ / 1000000) + "MHz\n";
-    info += "Target FPS: " + std::to_string(RTSP_FPS) + "\n";
+    info += "Target FPS:     " + std::to_string(RTSP_FPS) + "\n";
     info += "Frame Interval: " + std::to_string(frameInterval) + "ms\n";
-    info += "Pixel Format: JPEG\n";
-    info += "Frame Buffers: " + std::to_string(CAMERA_FB_COUNT) + "\n";
+    info += "Pixel Format:    JPEG\n";
+    info += "Frame Buffers:  " + std::to_string(CAMERA_FB_COUNT) + "\n";
 
     return info;
 }

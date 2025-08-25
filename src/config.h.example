@@ -4,9 +4,13 @@
  * @version 1.0
  * @date 2025
  * @brief Central configuration file for ESP32-CAM RTSP MJPEG multi-client firmware
+ *
+ * @modifications:
+ * 2025-08-28	JCZD	added BSSID-related stuff
  */
-// config.h
+// config.h.example
 // Configuration file for sensitive information and system parameters
+// edit and save as config.h
 
 #ifndef CONFIG_H
 #define CONFIG_H
@@ -22,15 +26,21 @@ typedef std::function<camera_fb_t *()> CaptureCallback;
 #define WIFI_SSID "YOUR_WIFI_SSID"
 #define WIFI_PASSWORD "YOUR_WIFI_PASSWORD"
 
+
 // ===== STATIC IP CONFIGURATION =====
 // Choose between DHCP (automatic) or static IP configuration
-// 0 = Use DHCP (automatic IP assignment) - RECOMMENDED for most networks
-// 1 = Use static IP configuration (manual IP assignment)
-#define WIFI_USE_STATIC_IP 0
+//#define WIFI_USE_STATIC_IP
 
 // EXAMPLE: To enable static IP, change the line above to:
-// #define WIFI_USE_STATIC_IP 1
+// #define WIFI_USE_STATIC_IP
 // Then modify the IP configuration below to match your network.
+
+// ===== EXPLICIT ACCESS POINT SELECTION =====
+// for more complex network setups, it may be desirable to specify which
+// AP the camera should connect to ; in such a case, uncomment the define
+// directive below and 
+#define WIFI_USE_BSSID
+
 
 // Static IP configuration (only used if WIFI_USE_STATIC_IP = 1)
 // ⚠️  MODIFY THESE VALUES IF USING STATIC IP !
@@ -53,10 +63,60 @@ typedef std::function<camera_fb_t *()> CaptureCallback;
 //   WIFI_STATIC_SUBNET "255.255.0.0"
 //
 // IMPORTANT: Make sure the IP address is not already used by another device!
+#ifdef WIFI_USE_STATIC_IP
+#ifndef WIFI_USE_BSSID
+
+// Static IP for simple networks (automatic AP selection)
 #define WIFI_STATIC_IP "192.168.1.100"     // ESP32 IP address
 #define WIFI_STATIC_GATEWAY "192.168.1.1"  // Router/Gateway IP address
 #define WIFI_STATIC_SUBNET "255.255.255.0" // Subnet mask
 #define WIFI_STATIC_DNS "8.8.8.8"          // Primary DNS server (Google DNS)
+
+#else
+
+//
+// Static IP configuration for more complex networks and epxlicit AP selection
+//
+#include <IPAddress.h>
+
+#define LOCAL_CAMERA_ID 77	// last byte of IP address
+#define MY_PREFERRED_AP		// connect to this AP (config below)
+
+// example of AP config
+#ifdef MY_PREFERRED_AP
+#define SUBNET_INT 1		// subnet selection
+const uint8_t WIFI_CHANNEL = 4;	// set to 0 for auto-selection
+const uint8_t WIFI_BSSID[6] = { 0x00, 0x11, 0x22, 0x33, 0x44, 0x55 };
+#endif
+
+const IPAddress staticIP(172, 16, SUBNET_INT, LOCAL_CAMERA_ID);
+const IPAddress gateway(172, 16, SUBNET_INT, 1);
+const IPAddress subnet(255, 255, 255, 0);
+
+#define HAS_PRIMARY_DNS
+const IPAddress primaryDNS(8, 8, 8, 8);   // Optional
+//#define HAS_SECONDARY_DNS	// takes precendence over HAS_PRIMARY_DNS
+//const IPAddress secondaryDNS(8, 8, 4, 4); // Optional
+
+//
+// end of section relative to AP selection
+//
+#endif
+#endif
+
+
+// ===== NTP CLOCK CONFIGURATION =====
+// NTP server for synchronization (comment out to disable NTP sync)
+#define RTSP_NTP_SERVER "pool.ntp.org"
+
+#ifdef RTSP_NTP_SERVER
+// NTP synchronization interval (seconds)
+#define RTSP_NTP_SYNC_INTERVAL 3600 // 1 hour
+// NTP connection timeout (milliseconds)
+#define RTSP_NTP_TIMEOUT 3000        // 3 seconds
+#endif
+
+
 
 // ===== CAMERA CONFIGURATION =====
 // Camera resolution - Choose according to your needs:
@@ -85,6 +145,85 @@ typedef std::function<camera_fb_t *()> CaptureCallback;
 // 20MHz = High frequency, better quality
 #define CAMERA_XCLK_FREQ 20000000 // 20 MHz - OPTIMIZED for 800x600 resolution
 
+// Frames per second (FPS) - FIXED AND REALISTIC
+// 5-10   = Very slow, energy saving
+// 10-15  = Slow, good for surveillance (RECOMMENDED)
+// 15-20  = Medium, good compromise
+// 20-25  = Fast, smooth
+// 25-30  = Very fast, may overload network
+#define RTSP_FPS 10 // 10 FPS FIXED - OPTIMIZED for stability
+
+// ===== ADVANCED CAMERA CONFIGURATION =====
+// OV2640 sensor parameters
+
+// Brightness (-2 to 2)
+// -2 = Very dark, -1 = Dark, 0 = Normal, 1 = Bright, 2 = Very bright
+#define CAMERA_BRIGHTNESS 1 // Slightly brighter
+
+// Contrast (-2 to 2)
+// -2 = Very low, -1 = Low, 0 = Normal, 1 = High, 2 = Very high
+#define CAMERA_CONTRAST 1 // A bit more contrast
+
+// Saturation (-2 to 2)
+// -2 = Very low, -1 = Low, 0 = Normal, 1 = High, 2 = Very high
+#define CAMERA_SATURATION 1 // A bit more color
+
+// Special effect (0-6)
+// 0 = No effect, 1 = Negative, 2 = Grayscale, 3 = Red tint
+// 4 = Green tint, 5 = Blue tint, 6 = Sepia
+#define CAMERA_SPECIAL_EFFECT 0 // Current effect: 0 (none)
+
+// Automatic white balance (0 = disabled, 1 = enabled)
+#define CAMERA_WHITEBAL 1 // White balance: enabled
+
+// AWB gain (0 = disabled, 1 = enabled)
+#define CAMERA_AWB_GAIN 1 // AWB gain: enabled
+
+// White balance mode (0-4) - if AWB enabled
+// 0 = Auto, 1 = Sunny, 2 = Cloudy, 3 = Office, 4 = Home
+#define CAMERA_WB_MODE 0 // Current mode: 0 (auto)
+
+// Automatic exposure control (0 = disabled, 1 = enabled)
+#define CAMERA_EXPOSURE_CTRL 1 // Exposure control: enabled
+
+// AEC2 (0 = disabled, 1 = enabled)
+#define CAMERA_AEC2 0 // AEC2: disabled
+
+// Automatic gain control (0 = disabled, 1 = enabled)
+#define CAMERA_GAIN_CTRL 1 // Gain control: enabled
+
+// AGC gain (0-30)
+#define CAMERA_AGC_GAIN 0 // Current AGC gain: 0
+
+// Gain ceiling (0-6)
+// 0 = x2, 1 = x4, 2 = x8, 3 = x16, 4 = x32, 5 = x64, 6 = x128
+#define CAMERA_GAINCEILING 0 // Current ceiling: x2
+
+// Bad pixel correction (0 = disabled, 1 = enabled)
+#define CAMERA_BPC 0 // Pixel correction: disabled
+
+// White pixel correction (0 = disabled, 1 = enabled)
+#define CAMERA_WPC 1 // White pixel correction: enabled
+
+// Raw gamma (0 = disabled, 1 = enabled)
+#define CAMERA_RAW_GMA 1 // Raw gamma: enabled
+
+// Lens correction (0 = disabled, 1 = enabled)
+#define CAMERA_LENC 1 // Lens correction: enabled
+
+// Horizontal mirror (0 = disabled, 1 = enabled)
+#define CAMERA_HMIRROR 0 // Horizontal mirror: disabled
+
+// Vertical flip (0 = disabled, 1 = enabled)
+#define CAMERA_VFLIP 0 // Vertical flip: disabled
+
+// Downsize (0 = disabled, 1 = enabled)
+#define CAMERA_DCW 1 // Downsize: enabled
+
+// Color bar (test) (0 = disabled, 1 = enabled)
+#define CAMERA_COLORBAR 0 // Color bar: disabled
+
+
 // ===== RTSP CONFIGURATION =====
 // RTSP server port (554 = standard RTSP port, prefer port 8554 as routers or ISPs sometimes block port 554)
 #define RTSP_PORT 8554 // Current port: 8554
@@ -97,7 +236,7 @@ typedef std::function<camera_fb_t *()> CaptureCallback;
 #define HTTP_MJPEG_PATH "/mjpeg"
 
 // RTSP server name in headers
-#define RTSP_SERVER_NAME "ESP32CAM-RTSP-Multi/1.0"
+#define RTSP_SERVER_NAME "ESP32CAM-RTSP-Multi/1.1"	// TODO redundancy in version/label is BAD!
 
 // RTP ports for transport (if needed)
 #define RTSP_CLIENT_PORT_RANGE "8000-8001"
@@ -128,14 +267,6 @@ typedef std::function<camera_fb_t *()> CaptureCallback;
 // Higher values = more aggressive compensation
 #define RTSP_COMPENSATION_FACTOR 2000 // 2ms compensation for better timing
 
-// Frames per second (FPS) - FIXED AND REALISTIC
-// 5-10   = Very slow, energy saving
-// 10-15  = Slow, good for surveillance (RECOMMENDED)
-// 15-20  = Medium, good compromise
-// 20-25  = Fast, smooth
-// 25-30  = Very fast, may overload network
-#define RTSP_FPS 10 // 10 FPS FIXED - OPTIMIZED for stability
-
 // ===== RTSP TIMECODE AND METADATA CONFIGURATION =====
 // Timecode mode for FFmpeg
 // 0 = Basic mode (simple timestamp)
@@ -153,17 +284,6 @@ typedef std::function<camera_fb_t *()> CaptureCallback;
 // 0 = Disabled (maximum compatibility)
 // 1 = Enabled (better FFmpeg compatibility)
 #define RTSP_ENABLE_CLOCK_METADATA 1
-
-// NTP clock synchronization
-// 0 = Disabled
-// 1 = Enabled (synchronization with NTP server)
-#define RTSP_ENABLE_NTP_SYNC 0
-
-// NTP server for synchronization (if enabled)
-#define RTSP_NTP_SERVER "pool.ntp.org"
-
-// NTP synchronization interval (seconds)
-#define RTSP_NTP_SYNC_INTERVAL 3600 // 1 hour
 
 // Advanced MJPEG metadata
 // 0 = Disabled
@@ -236,9 +356,6 @@ typedef std::function<camera_fb_t *()> CaptureCallback;
 #define CAMERA_FB_COUNT 2                   // 2 buffers - STABILITY OPTIMIZED
 #define CAMERA_GRAB_MODE CAMERA_GRAB_LATEST // Latest frame mode for better timing
 
-// WiFi quality threshold to consider connection as stable
-#define WIFI_QUALITY_THRESHOLD 20
-
 // ===== SYSTEM CONFIGURATION =====
 // Serial port speed for debug messages
 #define SERIAL_BAUD_RATE 115200 // Current speed: 115200 bauds
@@ -253,6 +370,9 @@ typedef std::function<camera_fb_t *()> CaptureCallback;
 #define PRODUCTION_MODE 0
 
 // ===== OPTIMIZED WIFI CONFIGURATION =====
+// WiFi quality threshold to consider connection as stable
+#define WIFI_QUALITY_THRESHOLD 20
+
 // Delay between WiFi connection attempts (ms)
 #define WIFI_DELAY_MS 200 // Balanced for stability and speed
 
@@ -325,75 +445,6 @@ typedef std::function<camera_fb_t *()> CaptureCallback;
 // Longer delay = CPU saving
 #define MAIN_LOOP_DELAY 5 // 5ms - OPTIMIZED for 10 FPS timing control
 
-// ===== ADVANCED CAMERA CONFIGURATION =====
-// OV2640 sensor parameters
-
-// Brightness (-2 to 2)
-// -2 = Very dark, -1 = Dark, 0 = Normal, 1 = Bright, 2 = Very bright
-#define CAMERA_BRIGHTNESS 1 // Slightly brighter
-
-// Contrast (-2 to 2)
-// -2 = Very low, -1 = Low, 0 = Normal, 1 = High, 2 = Very high
-#define CAMERA_CONTRAST 1 // A bit more contrast
-
-// Saturation (-2 to 2)
-// -2 = Very low, -1 = Low, 0 = Normal, 1 = High, 2 = Very high
-#define CAMERA_SATURATION 1 // A bit more color
-
-// Special effect (0-6)
-// 0 = No effect, 1 = Negative, 2 = Grayscale, 3 = Red tint
-// 4 = Green tint, 5 = Blue tint, 6 = Sepia
-#define CAMERA_SPECIAL_EFFECT 0 // Current effect: 0 (none)
-
-// Automatic white balance (0 = disabled, 1 = enabled)
-#define CAMERA_WHITEBAL 1 // White balance: enabled
-
-// AWB gain (0 = disabled, 1 = enabled)
-#define CAMERA_AWB_GAIN 1 // AWB gain: enabled
-
-// White balance mode (0-4) - if AWB enabled
-// 0 = Auto, 1 = Sunny, 2 = Cloudy, 3 = Office, 4 = Home
-#define CAMERA_WB_MODE 0 // Current mode: 0 (auto)
-
-// Automatic exposure control (0 = disabled, 1 = enabled)
-#define CAMERA_EXPOSURE_CTRL 1 // Exposure control: enabled
-
-// AEC2 (0 = disabled, 1 = enabled)
-#define CAMERA_AEC2 0 // AEC2: disabled
-
-// Automatic gain control (0 = disabled, 1 = enabled)
-#define CAMERA_GAIN_CTRL 1 // Gain control: enabled
-
-// AGC gain (0-30)
-#define CAMERA_AGC_GAIN 0 // Current AGC gain: 0
-
-// Gain ceiling (0-6)
-// 0 = x2, 1 = x4, 2 = x8, 3 = x16, 4 = x32, 5 = x64, 6 = x128
-#define CAMERA_GAINCEILING 0 // Current ceiling: x2
-
-// Bad pixel correction (0 = disabled, 1 = enabled)
-#define CAMERA_BPC 0 // Pixel correction: disabled
-
-// White pixel correction (0 = disabled, 1 = enabled)
-#define CAMERA_WPC 1 // White pixel correction: enabled
-
-// Raw gamma (0 = disabled, 1 = enabled)
-#define CAMERA_RAW_GMA 1 // Raw gamma: enabled
-
-// Lens correction (0 = disabled, 1 = enabled)
-#define CAMERA_LENC 1 // Lens correction: enabled
-
-// Horizontal mirror (0 = disabled, 1 = enabled)
-#define CAMERA_HMIRROR 0 // Horizontal mirror: disabled
-
-// Vertical flip (0 = disabled, 1 = enabled)
-#define CAMERA_VFLIP 0 // Vertical flip: disabled
-
-// Downsize (0 = disabled, 1 = enabled)
-#define CAMERA_DCW 1 // Downsize: enabled
-
-// Color bar (test) (0 = disabled, 1 = enabled)
-#define CAMERA_COLORBAR 0 // Color bar: disabled
 
 // HTTP response codes
 #define HTTP_OK 200
@@ -467,7 +518,6 @@ typedef struct
 
 // Synchronization delays
 #define RTSP_CLOCK_SYNC_TIMEOUT 5000 // 5 seconds
-#define RTSP_NTP_TIMEOUT 3000        // 3 seconds
 
 // Status codes for metadata
 #define RTSP_CLOCK_SYNC_OK 1

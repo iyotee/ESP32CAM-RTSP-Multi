@@ -42,10 +42,9 @@ void TimecodeManager::begin()
     initializeClock();
 
     // Sync with NTP if enabled
-    if (RTSP_ENABLE_NTP_SYNC)
-    {
+#ifdef RTSP_NTP_SERVER
         syncWithNTP();
-    }
+#endif
 
     LOG_INFOF("TimecodeManager initialized - Mode: %d", timecode_mode);
 }
@@ -105,10 +104,12 @@ void TimecodeManager::updateClockReference()
     clock_reference = esp_timer_get_time() / 1000;
 
     // Check if NTP resynchronization is needed
-    if (RTSP_ENABLE_NTP_SYNC && (current_time - last_sync_time) > (RTSP_NTP_SYNC_INTERVAL * 1000))
+#ifdef RTSP_NTP_SERVER
+    if ((current_time - last_sync_time) > (RTSP_NTP_SYNC_INTERVAL * 1000))
     {
         syncWithNTP();
     }
+#endif
 }
 
 RTSPTimecode_t TimecodeManager::generateTimecode()

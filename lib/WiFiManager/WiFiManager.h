@@ -53,7 +53,11 @@ public:
      * @note This method blocks until connection
      * @see config.h for delay and threshold parameters
      */
+#ifndef WIFI_USE_BSSID
     static void begin(const char *ssid, const char *password);
+#else
+    static void begin(const char *ssid, const char *password, const uint8_t channel, const uint8_t bssid[6]);
+#endif
 
     /**
      * @brief Checks if WiFi is connected
