@@ -5,13 +5,16 @@
  * @version 1.0
  * @date 2025
  *
+ * @modifications
+ * 2025-08-25	JCZD	explicit BSSID selection stuff
+ *
  * This firmware transforms an ESP32-CAM into a multi-client RTSP/MJPEG video server
  * with modular architecture and centralized configuration.
  *
  * Main features:
  * - Multi-client RTSP MJPEG server (up to 5 simultaneous clients)
  * - HTTP MJPEG server for browser access
- * - Robust WiFi management with monitoring
+ * - Robust WiFi management with monitoring, optional explicit AP selection
  * - 100% centralized configuration via config.h
  * - Professional logger with verbosity levels
  *
@@ -62,19 +65,32 @@ void setup()
     startupTime = millis();
 
     LOG_INFO("==========================================");
-    LOG_INFO("ESP32-CAM RTSP MJPEG Multi-Clients v1.0");
+    LOG_INFO("ESP32-CAM RTSP MJPEG Multi-Clients v1.1");
     LOG_INFO("==========================================");
 
     // Display system information
     Helpers::printSystemInfo();
 
     // === WIFI CONNECTION ===
-    LOG_INFO("Initializing WiFi connection...");
+#ifdef WIFI_USE_BSSID
+    LOG_DEBUG("Using hardcoded BSSID and WiFi channel");
+    WiFiManager::begin(WIFI_SSID, WIFI_PASSWORD, WIFI_CHANNEL, WIFI_BSSID);
+#else
+    LOG_DEBUG("Trying to connect to any station");
     WiFiManager::begin(WIFI_SSID, WIFI_PASSWORD);
+#endif
+
+  while (WiFi.status() != WL_CONNECTED)
 
     if (!WiFiManager::isConnected())
     {
-        LOG_ERROR("WiFi connection failed - Restarting...");
+        LOG_ERROR("WiFi connection failed - Restarting in");
+        LOG_ERRORF("3...");
+	delay(1000);
+        LOG_ERRORF("2...");
+	delay(1000);
+        LOG_ERRORF("1...");
+	delay(1000);
         ESP.restart();
     }
 
@@ -85,7 +101,6 @@ void setup()
     // (Removed)
 
     // === CAMERA INITIALIZATION ===
-    LOG_INFO("Initializing ESP32-CAM camera...");
     LOG_INFO("Starting camera initialization process...");
 
     bool cameraInitResult = CameraManager::begin();
@@ -93,11 +108,16 @@ void setup()
 
     if (!cameraInitResult)
     {
-        LOG_ERROR("Camera initialization failed - Restarting...");
+        LOG_ERROR("Camera initialization failed - Restarting in ");
+        LOG_ERRORF("3...");
+	delay(1000);
+        LOG_ERRORF("2...");
+	delay(1000);
+        LOG_ERRORF("1...");
+	delay(1000);
         ESP.restart();
     }
 
-    LOG_INFO("Camera initialized successfully");
     LOG_INFO("Getting camera information...");
     LOG_INFO(CameraManager::getCameraInfo().c_str());
 
@@ -112,7 +132,6 @@ void setup()
         ESP.restart();
     }
 
-    LOG_INFOF("RTSP server created on port %d", RTSP_PORT);
     rtspServer->begin();
     LOG_INFO("RTSP server started successfully");
 
@@ -121,20 +140,18 @@ void setup()
     httpMJPEGServer.setCaptureCallback([]() -> camera_fb_t *
                                        { return CameraManager::capture(); });
     httpMJPEGServer.begin();
-    LOG_INFO("HTTP MJPEG server started successfully");
 
     // === CONFIGURATION COMPLETE ===
     LOG_INFO("==========================================");
-    LOG_INFO("Configuration completed successfully!");
-    LOG_INFO("==========================================");
-    LOG_INFO("System ready - entering main loop...");
+    LOG_INFOF("             System ready");
+    LOG_INFOF("==========================================");
 
     // Display access URLs
     String localIP = WiFiManager::getLocalIP().toString();
     LOG_INFOF("RTSP Stream: rtsp://%s:%d%s", localIP.c_str(), RTSP_PORT, RTSP_PATH);
     LOG_INFOF("HTTP Stream: http://%s%s", localIP.c_str(), HTTP_MJPEG_PATH);
     LOG_INFO("Compatible clients: VLC, FFmpeg, web browsers");
-    LOG_INFO("Limit: 5 simultaneous RTSP clients");
+    LOG_INFO("Limit: 5 simultaneous RTSP clients");	// TODO this should be dynamic..
 
     // Final system information
     Helpers::printMemoryInfo();

@@ -189,16 +189,18 @@ void Helpers::printSystemInfo()
 }
 
 void Helpers::printWiFiInfo()
+// TODO this is almost redundant with WiFiManager::logConnectionStatus() - cleanup required
 {
     LOG_INFO("=== WiFi Information ===");
-    LOG_INFOF("SSID: %s", WiFi.SSID().c_str());
-    LOG_INFOF("IP: %s", ipToString(WiFi.localIP()).c_str());
-    LOG_INFOF("Gateway: %s", ipToString(WiFi.gatewayIP()).c_str());
-    LOG_INFOF("DNS: %s", ipToString(WiFi.dnsIP()).c_str());
-    LOG_INFOF("MAC: %s", WiFi.macAddress().c_str());
-    LOG_INFOF("RSSI: %d dBm", getWiFiRSSI());
-    LOG_INFOF("Quality: %d%%", getWiFiQuality());
-    LOG_INFOF("Mode: %s", getWiFiModeString().c_str());
+    LOG_INFOF("SSID:     %s", WiFi.SSID().c_str());
+    LOG_INFOF("BSSID:    %s", WiFi.BSSIDstr());	// TODO bad formatting!!
+    LOG_INFOF("RSSI:     %d dBm", getWiFiRSSI());
+    LOG_INFOF("Quality:  %d%%", getWiFiQuality());
+    LOG_INFOF("Mode:     %s", getWiFiModeString().c_str());
+    LOG_INFOF("MAC Addr: %s", WiFi.macAddress().c_str());
+    LOG_INFOF("IP Addr:  %s", ipToString(WiFi.localIP()).c_str());
+    LOG_INFOF("Gateway:  %s", ipToString(WiFi.gatewayIP()).c_str());
+    LOG_INFOF("DNS:      %s", ipToString(WiFi.dnsIP()).c_str()); // TODO show both nameservers if set!
     LOG_INFO("========================");
 }
 
