@@ -7,9 +7,7 @@
  *
  * @modifications
  * 2025-08-25	JCZD	explicit BSSID selection stuff
- *
- * @TODO
- * - clean up redundancies when connection is established/lost
+ * 2025-09-01	Jérémy Noverraz	cleaned up redundancies and improved connection monitoring
  */
 
 #include "WiFiManager.h"
@@ -20,10 +18,12 @@
 // Static variables for monitoring
 unsigned long WiFiManager::lastConnectionCheck = 0;
 bool WiFiManager::connectionStable = false;
+bool WiFiManager::lastConnectionState = false;
 
 void WiFiManager::begin(const char *ssid, const char *password
 #ifdef WIFI_USE_BSSID
-    , const uint8_t channel, const uint8_t bssid[6]
+                        ,
+                        const uint8_t channel, const uint8_t bssid[6]
 #endif
 )
 {
@@ -66,21 +66,26 @@ void WiFiManager::begin(const char *ssid, const char *password
 #else
 
 #ifdef HAS_SECONDARY_DNS
-  LOG_DEBUG("Both DNS servers are set");
-  if ( !WiFi.config(staticIP, gateway, subnet, primaryDNS, secondaryDNS) ) {
+    LOG_DEBUG("Both DNS servers are set");
+    if (!WiFi.config(staticIP, gateway, subnet, primaryDNS, secondaryDNS))
+    {
 #else
 #ifdef HAS_PRIMARY_DNS
-  LOG_DEBUG("Only primary DNS server is set");
-  if ( !WiFi.config(staticIP, gateway, subnet, primaryDNS) ) {
+    LOG_DEBUG("Only primary DNS server is set");
+    if (!WiFi.config(staticIP, gateway, subnet, primaryDNS))
+    {
 #else
-  LOG_DEBUG("No DNS servers are set!");
-  if ( !WiFi.config(staticIP, gateway, subnet) ) {
+    LOG_DEBUG("No DNS servers are set!");
+    if (!WiFi.config(staticIP, gateway, subnet))
+    {
 #endif
 #endif
         LOG_ERROR("Failed to configure static IP - falling back to DHCP");
-  } else {
+    }
+    else
+    {
         LOG_INFO("Static IP configuration applied successfully");
-  }
+    }
 #endif
 
 #else
@@ -176,23 +181,7 @@ void WiFiManager::begin(const char *ssid, const char *password
 bool WiFiManager::isConnected()
 {
     bool connected = (WiFi.status() == WL_CONNECTED);
-
-    // Connection monitoring
-    if (connected != connectionStable)
-    {
-        if (connected)
-        {
-            LOG_INFO("WiFi reconnected");
-            connectionStable = true;
-        }
-        else
-        {
-            LOG_WARN("WiFi disconnected");
-            connectionStable = false;
-        }
-        lastConnectionCheck = millis();
-    }
-
+    updateConnectionState(connected);
     return connected;
 }
 
@@ -206,23 +195,18 @@ bool WiFiManager::isStable()
     int quality = getSignalQuality();
     bool stable = (quality >= WIFI_QUALITY_THRESHOLD);
 
-    // Stability monitoring
-    static unsigned long lastStabilityCheck = 0;
-    if (millis() - lastStabilityCheck > 30000) // Check every 30 seconds
+    // Update stability state if changed
+    if (stable != connectionStable)
     {
-        if (stable != connectionStable)
+        connectionStable = stable;
+        if (stable)
         {
-            if (stable)
-            {
-                LOG_INFO("WiFi connection stabilized");
-            }
-            else
-            {
-                LOG_WARN("WiFi connection unstable");
-            }
-            connectionStable = stable;
+            LOG_INFO("WiFi connection stabilized");
         }
-        lastStabilityCheck = millis();
+        else
+        {
+            LOG_WARN("WiFi connection unstable");
+        }
     }
 
     return stable;
@@ -286,45 +270,8 @@ bool WiFiManager::reconnect()
     WiFi.setSleep(false);
     WiFi.setAutoReconnect(true);
 
-    // Configure static IP if enabled (same as in begin method)
-#ifdef WIFI_USE_STATIC_IP
-    LOG_INFO("Reapplying static IP configuration...");
-#ifndef WIFI_USE_BSSID
-    IPAddress staticIP, gateway, subnet, dns;
-
-    if (staticIP.fromString(WIFI_STATIC_IP) &&
-        gateway.fromString(WIFI_STATIC_GATEWAY) &&
-        subnet.fromString(WIFI_STATIC_SUBNET) &&
-        dns.fromString(WIFI_STATIC_DNS))
-    {
-        WiFi.config(staticIP, gateway, subnet, dns);
-        LOG_INFO("Static IP configuration reapplied successfully");
-    }
-    else
-    {
-        LOG_ERROR("Invalid static IP configuration during reconnection - falling back to DHCP");
-    }
-#else
-
-#ifdef HAS_SECONDARY_DNS
-  LOG_INFO("Both DNS servers are set");
-  if ( !WiFi.config(staticIP, gateway, subnet, primaryDNS, secondaryDNS) ) {
-#else
-#ifdef HAS_PRIMARY_DNS
-  LOG_INFO("Only primary DNS server is set");
-  if ( !WiFi.config(staticIP, gateway, subnet, primaryDNS) ) {
-#else
-  LOG_INFO("No DNS servers are set!");
-  if ( !WiFi.config(staticIP, gateway, subnet) ) {
-#endif
-#endif
-        LOG_ERROR("Failed to configure static IP - falling back to DHCP");
-  } else {
-        LOG_INFO("Static IP configuration applied successfully");
-  }
-#endif
-
-#endif
+    // Configure static IP if enabled
+    configureStaticIP();
 
     int attempts = 0;
     const int maxAttempts = 5;
@@ -418,48 +365,86 @@ bool WiFiManager::handleAuthError()
     WiFi.setAutoReconnect(true);
     WiFi.setTxPower(WIFI_POWER_19_5dBm);
 
-    // Configure static IP if enabled (same as in begin method)
-#ifdef WIFI_USE_STATIC_IP
-        LOG_INFO("Reapplying static IP configuration after auth error...");
-#ifndef WIFI_USE_BSSID
-        IPAddress staticIP, gateway, subnet, dns;
-
-        if (staticIP.fromString(WIFI_STATIC_IP) &&
-            gateway.fromString(WIFI_STATIC_GATEWAY) &&
-            subnet.fromString(WIFI_STATIC_SUBNET) &&
-            dns.fromString(WIFI_STATIC_DNS))
-        {
-            WiFi.config(staticIP, gateway, subnet, dns);
-            LOG_INFO("Static IP configuration reapplied after auth error");
-        }
-        else
-        {
-            LOG_ERROR("Invalid static IP configuration after auth error - falling back to DHCP");
-        }
-#else
-
-#ifdef HAS_SECONDARY_DNS
-  LOG_INFO("Both DNS servers are set");
-  if ( !WiFi.config(staticIP, gateway, subnet, primaryDNS, secondaryDNS) ) {
-#else
-#ifdef HAS_PRIMARY_DNS
-  LOG_INFO("Only primary DNS server is set");
-  if ( !WiFi.config(staticIP, gateway, subnet, primaryDNS) ) {
-#else
-  LOG_INFO("No DNS servers are set!");
-  if ( !WiFi.config(staticIP, gateway, subnet) ) {
-#endif
-#endif
-        LOG_ERROR("Failed to configure static IP - falling back to DHCP");
-  } else {
-        LOG_INFO("Static IP configuration applied successfully");
-  }
-#endif
+    // Configure static IP if enabled
+    configureStaticIP();
 
     // Wait longer before restarting
     delay(3000);
 
     LOG_INFO("WiFi parameters reset to resolve authentication error");
     return true;
+}
+
+void WiFiManager::configureStaticIP()
+{
+#ifdef WIFI_USE_STATIC_IP
+    LOG_INFO("Configuring static IP...");
+#ifndef WIFI_USE_BSSID
+    LOG_INFOF("Static IP: %s", WIFI_STATIC_IP);
+    LOG_INFOF("Gateway: %s", WIFI_STATIC_GATEWAY);
+    LOG_INFOF("Subnet: %s", WIFI_STATIC_SUBNET);
+    LOG_INFOF("DNS: %s", WIFI_STATIC_DNS);
+
+    IPAddress staticIP, gateway, subnet, dns;
+
+    if (staticIP.fromString(WIFI_STATIC_IP) &&
+        gateway.fromString(WIFI_STATIC_GATEWAY) &&
+        subnet.fromString(WIFI_STATIC_SUBNET) &&
+        dns.fromString(WIFI_STATIC_DNS))
+    {
+        WiFi.config(staticIP, gateway, subnet, dns);
+        LOG_DEBUG("Static IP configuration applied successfully");
+    }
+    else
+    {
+        LOG_ERROR("Invalid static IP configuration - falling back to DHCP");
+    }
+#else
+
+#ifdef HAS_SECONDARY_DNS
+    LOG_DEBUG("Both DNS servers are set");
+    if (!WiFi.config(staticIP, gateway, subnet, primaryDNS, secondaryDNS))
+    {
+#else
+#ifdef HAS_PRIMARY_DNS
+    LOG_DEBUG("Only primary DNS server is set");
+    if (!WiFi.config(staticIP, gateway, subnet, primaryDNS))
+    {
+#else
+    LOG_DEBUG("No DNS servers are set!");
+    if (!WiFi.config(staticIP, gateway, subnet))
+    {
 #endif
+#endif
+        LOG_ERROR("Failed to configure static IP - falling back to DHCP");
+    }
+    else
+    {
+        LOG_INFO("Static IP configuration applied successfully");
+    }
+#endif
+
+#else
+    LOG_INFO("Using DHCP for automatic IP assignment");
+#endif
+}
+
+void WiFiManager::updateConnectionState(bool connected)
+{
+    // Only log state changes to avoid spam
+    if (connected != lastConnectionState)
+    {
+        if (connected)
+        {
+            LOG_INFO("WiFi connected");
+            connectionStable = true;
+        }
+        else
+        {
+            LOG_WARN("WiFi disconnected");
+            connectionStable = false;
+        }
+        lastConnectionState = connected;
+        lastConnectionCheck = millis();
+    }
 }

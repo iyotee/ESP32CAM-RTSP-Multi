@@ -28,6 +28,7 @@
 #include "../lib/Nano-RTSP/NanoRTSPServer.h"
 #include "../lib/Utils/Logger.h"
 #include "../lib/Utils/Helpers.h"
+#include "../lib/Utils/OTAManager.h"
 #include "../lib/HTTPMJPEGServer/HTTPMJPEGServer.h"
 #include <WebServer.h>
 
@@ -38,6 +39,9 @@ HTTPMJPEGServer httpMJPEGServer(HTTP_SERVER_PORT);
 
 // Global RTSP server instance (dynamic allocation)
 NanoRTSPServer *rtspServer = nullptr;
+
+// OTA Manager instance
+OTAManager otaManager;
 
 // Monitoring variables
 unsigned long startupTime = 0;
@@ -80,25 +84,39 @@ void setup()
     WiFiManager::begin(WIFI_SSID, WIFI_PASSWORD);
 #endif
 
-  while (WiFi.status() != WL_CONNECTED)
+    while (WiFi.status() != WL_CONNECTED)
 
-    if (!WiFiManager::isConnected())
-    {
-        LOG_ERROR("WiFi connection failed - Restarting in");
-        LOG_ERRORF("3...");
-	delay(1000);
-        LOG_ERRORF("2...");
-	delay(1000);
-        LOG_ERRORF("1...");
-	delay(1000);
-        ESP.restart();
-    }
+        if (!WiFiManager::isConnected())
+        {
+            LOG_ERROR("WiFi connection failed - Restarting in");
+            LOG_ERRORF("3...");
+            delay(1000);
+            LOG_ERRORF("2...");
+            delay(1000);
+            LOG_ERRORF("1...");
+            delay(1000);
+            ESP.restart();
+        }
 
     // Display WiFi information (removed double initialization)
     Helpers::printWiFiInfo();
 
     // === OTA (Over-The-Air) ===
-    // (Removed)
+#ifdef ENABLE_OTA
+    LOG_INFO("Starting OTA server...");
+                    if (otaManager.begin())
+    {
+        LOG_INFOF("OTA server started on port %d", OTA_SERVER_PORT);
+        String localIP = WiFiManager::getLocalIP().toString();
+        LOG_INFOF("OTA Update URL: http://%s:%d", localIP.c_str(), OTA_SERVER_PORT);
+    }
+    else
+    {
+        LOG_ERROR("Failed to start OTA server");
+    }
+#else
+    LOG_INFO("OTA functionality disabled");
+#endif
 
     // === CAMERA INITIALIZATION ===
     LOG_INFO("Starting camera initialization process...");
@@ -110,11 +128,11 @@ void setup()
     {
         LOG_ERROR("Camera initialization failed - Restarting in ");
         LOG_ERRORF("3...");
-	delay(1000);
+        delay(1000);
         LOG_ERRORF("2...");
-	delay(1000);
+        delay(1000);
         LOG_ERRORF("1...");
-	delay(1000);
+        delay(1000);
         ESP.restart();
     }
 
@@ -150,8 +168,11 @@ void setup()
     String localIP = WiFiManager::getLocalIP().toString();
     LOG_INFOF("RTSP Stream: rtsp://%s:%d%s", localIP.c_str(), RTSP_PORT, RTSP_PATH);
     LOG_INFOF("HTTP Stream: http://%s%s", localIP.c_str(), HTTP_MJPEG_PATH);
+#ifdef ENABLE_OTA
+    LOG_INFOF("OTA Update: http://%s:%d", localIP.c_str(), OTA_SERVER_PORT);
+#endif
     LOG_INFO("Compatible clients: VLC, FFmpeg, web browsers");
-    LOG_INFO("Limit: 5 simultaneous RTSP clients");	// TODO this should be dynamic..
+    LOG_INFO("Limit: 5 simultaneous RTSP clients"); // TODO this should be dynamic..
 
     // Final system information
     Helpers::printMemoryInfo();
@@ -176,6 +197,9 @@ void performHealthCheck()
     LOG_DEBUGF("Free memory: %s", FORMAT_BYTES(Helpers::getFreeMemory()).c_str());
     LOG_DEBUGF("Memory used: %d%%", Helpers::getMemoryUsage());
     LOG_DEBUGF("Camera initialized: %s", CameraManager::isInitialized() ? "Yes" : "No");
+#ifdef ENABLE_OTA
+    LOG_DEBUGF("OTA status: %s", otaManager.getStatus().c_str());
+#endif
     LOG_DEBUG("===================");
 }
 
@@ -206,6 +230,11 @@ void loop()
 
     // HTTP MJPEG client management
     httpMJPEGServer.handleClient();
+
+    // OTA client management
+#ifdef ENABLE_OTA
+    otaManager.handleClient();
+#endif
 
     // === PERIODIC MONITORING ===
 

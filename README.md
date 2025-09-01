@@ -20,6 +20,7 @@
 
 - **Multi-client RTSP MJPEG server** (compatible with FFmpeg, browsers, VLC, etc.)
 - **HTTP MJPEG server** for direct browser access
+- **OTA (Over-The-Air) firmware updates** via web interface
 - **Modular architecture** (CameraManager, WiFiManager, Nano-RTSP, HTTPMJPEGServer, Utils)
 - **Centralized logger** with verbosity levels
 - **Non-blocking memory and timing management**
@@ -263,6 +264,7 @@ The firmware includes optimized camera settings for maximum stability:
 #### Access to video streams
 - **RTSP** : `rtsp://<ESP32_IP>:8554/stream=0`
 - **HTTP MJPEG** : `http://<ESP32_IP>:80/mjpeg`
+- **OTA Updates** : `http://<ESP32_IP>:3232`
 
 #### Transport Protocol
 The firmware automatically handles transport protocol selection:
@@ -344,6 +346,87 @@ ffprobe -v quiet -print_format json -show_format -show_streams rtsp://192.168.1.
 2. Go to Media → Open Network Stream
 3. Enter : `rtsp://192.168.1.100:8554/stream=0`
 4. Click Play
+
+## 🔄 OTA (Over-The-Air) Firmware Updates
+
+The firmware includes a built-in web-based OTA update system that allows you to upload new firmware without connecting cables.
+
+### Features
+- **Web interface** : Simple drag-and-drop upload via browser
+- **Secure updates** : Firmware validation and rollback protection
+- **Memory optimization** : Automatic camera deinitialization during update
+- **Real-time progress** : Live upload progress display
+- **Automatic restart** : Device restarts automatically after successful update
+
+### Configuration
+OTA is enabled by default. You can configure it in `src/config.h`:
+
+```cpp
+// Enable/disable OTA functionality
+#define ENABLE_OTA 1
+
+// OTA server port (separate from main HTTP server)
+#define OTA_SERVER_PORT 3232
+
+// OTA update timeout (seconds)
+#define OTA_UPDATE_TIMEOUT 300  // 5 minutes
+
+// OTA progress update interval (ms)
+#define OTA_PROGRESS_INTERVAL 1000  // 1 second
+```
+
+### Usage
+
+#### Accessing the OTA Interface
+1. Ensure your ESP32-CAM is connected to WiFi
+2. Open your web browser
+3. Navigate to: `http://<ESP32_IP>:3232`
+4. You'll see the OTA update interface
+
+#### Uploading New Firmware
+1. Build your firmware with PlatformIO:
+   ```bash
+   pio run --environment esp32cam-nano-rtsp
+   ```
+2. Locate the generated firmware file: `.pio/build/esp32cam-nano-rtsp/firmware.bin`
+3. In the OTA web interface:
+   - Click "Click here to select firmware file"
+   - Select your `firmware.bin` file
+   - Click "Upload Firmware"
+4. Wait for the upload to complete (progress is shown in real-time)
+5. The device will restart automatically with the new firmware
+
+#### OTA Partition Table
+The firmware uses a dedicated OTA partition table (`partitions_ota.csv`) that includes:
+- **app0**: First application slot (1.25MB)
+- **app1**: Second application slot (1.25MB) 
+- **otadata**: OTA data partition for slot management
+- **nvs**: Non-volatile storage
+- **spiffs**: File system storage
+
+### Security Considerations
+- **Local network only** : OTA interface is only accessible on your local network
+- **Firmware validation** : Only valid ESP32 firmware files are accepted
+- **Size limits** : Maximum firmware size is 1.5MB
+- **Rollback protection** : Failed updates don't brick the device
+
+### Troubleshooting OTA Updates
+
+#### Upload fails
+- **Check file size** : Firmware must be under 1.5MB
+- **Verify file type** : Only `.bin` files from PlatformIO builds
+- **Network stability** : Ensure stable WiFi connection during upload
+- **Power supply** : Use adequate power supply (5V/2A recommended)
+
+#### Device doesn't respond after update
+- **Power cycle** : Unplug and reconnect power
+- **Flash recovery** : Use serial upload if OTA partition is corrupted
+- **Rollback** : The device should automatically rollback to previous working firmware
+
+#### OTA interface not accessible
+- **Check IP address** : Verify ESP32-CAM IP with serial monitor
+- **Port availability** : Ensure port 3232 is not blocked
+- **OTA enabled** : Verify `ENABLE_OTA 1` in config.h
 
 ## 🔧 Easy Customization
 - **No values are hardcoded** in the source code

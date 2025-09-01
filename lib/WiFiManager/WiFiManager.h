@@ -128,8 +128,10 @@ public:
 private:
     static unsigned long lastConnectionCheck;
     static bool connectionStable;
-    static void monitorConnection();
+    static bool lastConnectionState;
     static void logConnectionStatus();
+    static void configureStaticIP();
+    static void updateConnectionState(bool connected);
 };
 
 #endif // WIFI_MANAGER_H
